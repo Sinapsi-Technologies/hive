@@ -6,7 +6,7 @@
 ._*
 
 # Custom folder icons
-Icon
+Icon
 
 # Volume root files
 .DocumentRevisions-V100
@@ -28,8 +28,8 @@ cmake-build-*/
 *.iws
 *.iml
 
-# IntelliJ build output
-out/
+# IntelliJ build output (root only — do NOT ignore hexagonal application.ports.out / adapters.out packages)
+/out/
 
 ### Java
 # Compiled class file
