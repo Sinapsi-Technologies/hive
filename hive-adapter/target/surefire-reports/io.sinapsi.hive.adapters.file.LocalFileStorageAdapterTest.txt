@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: io.sinapsi.hive.adapters.file.LocalFileStorageAdapterTest
--------------------------------------------------------------------------------
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in io.sinapsi.hive.adapters.file.LocalFileStorageAdapterTest
