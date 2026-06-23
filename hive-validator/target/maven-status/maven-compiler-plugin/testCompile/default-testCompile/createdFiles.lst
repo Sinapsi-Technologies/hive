@@ -1,0 +1,5 @@
+io/sinapsi/hive/validation/CommandValidatorTest.class
+io/sinapsi/hive/validation/CommandValidatorTest$CreateUserValidation.class
+io/sinapsi/hive/validation/CommandValidatorTest$CreateUserCommandFactory.class
+io/sinapsi/hive/validation/TestValidationProvider.class
+io/sinapsi/hive/validation/CommandValidatorTest$CreateUserCommand.class

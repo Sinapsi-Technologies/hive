@@ -1,0 +1,4 @@
+io/sinapsi/hive/adapters/event/InMemoryEventPublisherAdapter.class
+io/sinapsi/hive/adapters/id/UuidGeneratorAdapter.class
+io/sinapsi/hive/adapters/file/LocalFileStorageAdapter.class
+io/sinapsi/hive/adapters/clock/SystemClockAdapter.class

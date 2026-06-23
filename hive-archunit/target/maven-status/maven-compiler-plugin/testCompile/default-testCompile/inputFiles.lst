@@ -1,0 +1,11 @@
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/HexagonalRulesTest.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/RegisterUseCase.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/commands/RegisterCommand.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/out/StorePort.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/services/RegisterService.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/domain/Amount.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/infrastructure/adapters/in/RegisterController.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/infrastructure/adapters/out/StoreAdapter.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/domaindep/application/OrderWorkflow.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/domaindep/domain/OrderEntity.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/serviceindomain/domain/PricingService.java

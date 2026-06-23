@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Hive is a lightweight Java 21 toolkit for hexagonal architecture, CLI scaffolding, validation, ports, adapters, and reusable ArchUnit rules."
+  />
+  <title>Hive | Java Hexagonal Architecture Toolkit</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="#top" aria-label="Hive home">
+    <span class="brand-mark">H</span>
+    <span>Hive</span>
+  </a>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a href="#toolkit">Toolkit</a>
+    <a href="#quick-start">Quick start</a>
+    <a href="#claude-code">Claude Code</a>
+    <a href="#rules">Rules</a>
+    <a href="https://github.com/Sinapsi-Technologies/hive/">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-frame">
+      <img
+        src="./assets/hive-cover.png"
+        alt="Hive, the new way to build microservices"
+        class="hero-image"
+      />
+    </div>
+
+    <div class="hero-bar">
+      <div>
+        <p class="eyebrow">Java 21 · Maven · Hexagonal Architecture</p>
+        <h1 id="hero-title">A lightweight toolkit for clean Java boundaries.</h1>
+        <a
+          class="license-badge"
+          href="https://www.apache.org/licenses/LICENSE-2.0"
+          aria-label="Apache 2.0 license"
+        >
+          <span>License</span>
+          <strong>Apache-2.0</strong>
+        </a>
+      </div>
+      <div class="hero-actions" aria-label="Project actions">
+        <a class="button primary" href="https://github.com/Sinapsi-Technologies/hive/">View on GitHub</a>
+        <a class="button secondary" href="#quick-start">Start building</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="intro" id="toolkit" aria-labelledby="toolkit-title">
+    <div>
+      <p class="section-kicker">Simple first, modular later</p>
+      <h2 id="toolkit-title">A small toolkit for clean Java boundaries.</h2>
+    </div>
+    <p>
+      Hive gives teams a practical convention for commands, use cases, ports,
+      adapters, validation, and architecture tests. It helps you move quickly
+      without turning your application into a framework project.
+    </p>
+  </section>
+
+  <section class="modules" aria-label="Hive modules">
+    <article>
+      <span class="module-name">hive-core</span>
+      <h3>Framework-free contracts</h3>
+      <p>Commands, results, use cases, events, mappers, identifiers, aggregates, and port direction markers.</p>
+    </article>
+    <article>
+      <span class="module-name">hive-cli</span>
+      <h3>Scaffolding that compiles</h3>
+      <p>Create project markers, Maven dependencies, use cases, factories, architecture tests, and standard folders.</p>
+    </article>
+    <article>
+      <span class="module-name">hive-archunit</span>
+      <h3>Executable architecture</h3>
+      <p>Reusable ArchUnit rules for domain purity, dependency direction, ports, commands, services, and adapters.</p>
+    </article>
+    <article>
+      <span class="module-name">hive-validator</span>
+      <h3>Command validation flow</h3>
+      <p>Use AbstractCommandFactory and SPI-based providers so use cases receive valid immutable commands.</p>
+    </article>
+    <article>
+      <span class="module-name">hive-port</span>
+      <h3>Optional technical ports</h3>
+      <p>Clock, ID generation, event publishing, and file storage ports for application services.</p>
+    </article>
+    <article>
+      <span class="module-name">hive-adapter</span>
+      <h3>Lightweight defaults</h3>
+      <p>Small adapter implementations for local storage, UUID generation, system clock, and in-memory events.</p>
+    </article>
+  </section>
+
+  <section class="quick-start" id="quick-start" aria-labelledby="quick-start-title">
+    <div class="quick-copy">
+      <p class="section-kicker">CLI quick start</p>
+      <h2 id="quick-start-title">Generate the boring parts and keep moving.</h2>
+      <p>
+        The CLI creates a Java 21 Maven project shape, source roots, config,
+        Hive dependencies, use case files, command factories, and ArchUnit tests.
+      </p>
+    </div>
+    <div class="terminal-window" aria-label="Hive CLI terminal commands">
+      <div class="window-bar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <strong>terminal</strong>
+      </div>
+      <pre><code><span class="prompt">$</span> mvn -pl hive-cli -am package
+
+<span class="prompt">$</span> hive init
+<span class="prompt">$</span> hive create usecase CreateUser --factory
+<span class="prompt">$</span> hive create archtest
+<span class="prompt">$</span> hive check</code></pre>
+    </div>
+  </section>
+
+  <section class="claude-code" id="claude-code" aria-labelledby="claude-code-title">
+    <div class="claude-copy">
+      <p class="section-kicker">Claude Code plugin</p>
+      <h2 id="claude-code-title">Claude Code Quick Start</h2>
+      <p>
+        The Hive plugin lets Claude Code drive the deterministic Hive CLI instead
+        of hand-writing architecture structure. The CLI creates the files, returns
+        JSON with the generated paths, and Claude fills the TODO markers with real
+        application logic before running Maven verification. This saves tokens by
+        moving repetitive scaffolding work out of the conversation and into the CLI.
+      </p>
+    </div>
+
+    <div class="claude-panel">
+      <div class="terminal-window" aria-label="Claude Code plugin commands">
+        <div class="window-bar">
+          <span></span>
+          <span></span>
+          <span></span>
+          <strong>claude-code</strong>
+        </div>
+        <pre><code><span class="prompt">></span> /plugin marketplace add Sinapsi-Technologies/hive
+<span class="prompt">></span> /plugin install hive@sinapsi
+
+<span class="prompt">></span> /hive:new com.acme.billing
+
+<span class="prompt">></span> "add a RegisterInvoice use case
+ with a SaveInvoice port
+ and an in-memory adapter"</code></pre>
+      </div>
+
+      <div class="claude-points">
+        <p><strong>/hive:new</strong> bootstraps a Hive project, runs <code>hive init</code>, creates a starter slice, adds an architecture test, and verifies with Maven.</p>
+        <p><strong>hive skill</strong> activates for use cases, output ports, adapters, and modules. It runs <code>hive create ... --json</code>, reads the generated files, implements the TODOs, and runs <code>mvn verify</code>.</p>
+        <p><strong>Token-efficient by design</strong>: Hive handles package layout, Maven dependencies, generated files, and architecture boilerplate deterministically, so Claude spends context on business logic instead of repeating structure.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="convention" aria-labelledby="convention-title">
+    <div class="section-heading">
+      <p class="section-kicker">Package convention</p>
+      <h2 id="convention-title">A predictable home for every boundary.</h2>
+    </div>
+
+    <div class="layout-grid">
+      <div>
+        <h3>Application</h3>
+        <p>Input ports and command contracts live under <code>application.ports.in</code>. Output capabilities live under <code>application.ports.out</code>. Use case implementations live in <code>application.services</code>.</p>
+      </div>
+      <div>
+        <h3>Domain</h3>
+        <p>Value objects, entities, aggregates, events, snapshots, and exceptions stay framework-free and independent from application or infrastructure code.</p>
+      </div>
+      <div>
+        <h3>Infrastructure</h3>
+        <p>Inbound adapters receive requests. Outbound adapters implement output ports. Configuration packages wire everything together.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rules" id="rules" aria-labelledby="rules-title">
+    <div>
+      <p class="section-kicker">Architecture rules</p>
+      <h2 id="rules-title">Let tests guard the direction of dependencies.</h2>
+    </div>
+    <div class="ide-window" aria-label="ArchUnit test code example">
+      <div class="window-bar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <strong>ArchitectureTest.java</strong>
+      </div>
+      <pre><code><span class="annotation">@AnalyzeClasses</span>(packages = <span class="string">"com.example.app"</span>)
+class ArchitectureTest {
+    <span class="annotation">@ArchTest</span>
+    static final ArchRule hiveBaseRules =
+            HexagonalRules.allBaseRules(<span class="string">"com.example.app"</span>);
+}</code></pre>
+    </div>
+  </section>
+
+  <section class="principles" aria-label="Hive principles">
+    <p>Strong boundaries, low ceremony.</p>
+    <p>Core stays framework-free.</p>
+    <p>Adapters implement ports.</p>
+    <p>Domain logic stays in the domain.</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <img src="./assets/sinapsi-logo.png" alt="Sinapsi" />
+  <p>Built by Sinapsi for pragmatic Java teams · Apache-2.0 License</p>
+</footer>
+</body>
+</html>

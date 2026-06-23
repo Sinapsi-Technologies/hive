@@ -1,0 +1,5 @@
+io/sinapsi/hive/factory/AbstractCommandFactory.class
+io/sinapsi/hive/validation/ValidationProvider.class
+io/sinapsi/hive/validation/CommandValidator.class
+io/sinapsi/hive/validation/ValidationProviders.class
+io/sinapsi/hive/validation/NoopValidationProvider.class

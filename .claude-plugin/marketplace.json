@@ -1,0 +1,14 @@
+{
+  "name": "sinapsi",
+  "owner": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "plugins": [
+    {
+      "name": "hive",
+      "source": "./plugins/hive",
+      "description": "Bootstrap and evolve hexagonal (ports & adapters) Java projects with the Hive toolkit CLI."
+    }
+  ]
+}

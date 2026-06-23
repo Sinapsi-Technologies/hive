@@ -1,0 +1,9 @@
+io/sinapsi/hive/core/CoreContractsTest$TestCommand.class
+io/sinapsi/hive/core/CoreContractsTest$TestDomainEvent.class
+io/sinapsi/hive/core/CoreContractsTest$TestInputPort.class
+io/sinapsi/hive/core/CoreContractsTest.class
+io/sinapsi/hive/core/UseCaseTest$TestCommand.class
+io/sinapsi/hive/core/CoreContractsTest$TestOutputPort.class
+io/sinapsi/hive/core/CoreContractsTest$TestIntegrationEvent.class
+io/sinapsi/hive/core/UseCaseTest.class
+io/sinapsi/hive/core/CoreContractsTest$1.class

@@ -1,0 +1,7 @@
+io/sinapsi/hive/adapters/clock/SystemClockAdapterTest.class
+io/sinapsi/hive/adapters/id/UuidGeneratorAdapterTest$TestId.class
+io/sinapsi/hive/adapters/file/LocalFileStorageAdapterTest.class
+io/sinapsi/hive/adapters/id/UuidGeneratorAdapterTest.class
+io/sinapsi/hive/adapters/id/UuidGeneratorAdapterTest$IncrementalUuidSupplier.class
+io/sinapsi/hive/adapters/event/InMemoryEventPublisherAdapterTest.class
+io/sinapsi/hive/adapters/event/InMemoryEventPublisherAdapterTest$TestEvent.class

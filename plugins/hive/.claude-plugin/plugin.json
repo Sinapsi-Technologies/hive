@@ -1,0 +1,19 @@
+{
+  "name": "hive",
+  "description": "Bootstrap and evolve hexagonal (ports & adapters) Java projects with the Hive toolkit CLI. Drives the deterministic `hive` CLI for structure and fills in the generated // TODO: markers.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "homepage": "https://github.com/Sinapsi-Technologies/hive",
+  "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "license": "Apache-2.0",
+  "keywords": [
+    "hexagonal",
+    "ports-and-adapters",
+    "architecture",
+    "java",
+    "scaffolding"
+  ]
+}

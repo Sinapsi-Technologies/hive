@@ -1,0 +1,16 @@
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/command/Command.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/domain/AggregateId.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/domain/AggregateRoot.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/domain/Identifier.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/event/DomainEvent.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/event/Event.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/event/EventHandler.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/event/IntegrationEvent.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/mapper/BiMapper.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/mapper/Mapper.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/InputPort.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/OutputPort.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/Port.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Result.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Unit.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/usecase/UseCase.java

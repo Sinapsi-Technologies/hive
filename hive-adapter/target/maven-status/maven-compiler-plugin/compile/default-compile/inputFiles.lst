@@ -1,0 +1,4 @@
+/Users/cristian/Documents/code/sinapsi/hive/hive-adapter/src/main/java/io/sinapsi/hive/adapters/clock/SystemClockAdapter.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-adapter/src/main/java/io/sinapsi/hive/adapters/event/InMemoryEventPublisherAdapter.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-adapter/src/main/java/io/sinapsi/hive/adapters/file/LocalFileStorageAdapter.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-adapter/src/main/java/io/sinapsi/hive/adapters/id/UuidGeneratorAdapter.java

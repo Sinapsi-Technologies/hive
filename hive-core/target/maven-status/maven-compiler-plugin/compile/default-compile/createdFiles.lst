@@ -1,0 +1,16 @@
+io/sinapsi/hive/core/domain/AggregateId.class
+io/sinapsi/hive/core/event/DomainEvent.class
+io/sinapsi/hive/core/domain/Identifier.class
+io/sinapsi/hive/core/result/Unit.class
+io/sinapsi/hive/core/event/Event.class
+io/sinapsi/hive/core/result/Result.class
+io/sinapsi/hive/core/mapper/Mapper.class
+io/sinapsi/hive/core/port/InputPort.class
+io/sinapsi/hive/core/command/Command.class
+io/sinapsi/hive/core/event/IntegrationEvent.class
+io/sinapsi/hive/core/mapper/BiMapper.class
+io/sinapsi/hive/core/domain/AggregateRoot.class
+io/sinapsi/hive/core/port/OutputPort.class
+io/sinapsi/hive/core/usecase/UseCase.class
+io/sinapsi/hive/core/event/EventHandler.class
+io/sinapsi/hive/core/port/Port.class

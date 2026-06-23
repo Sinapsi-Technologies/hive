@@ -1,0 +1,21 @@
+#!/bin/bash
+
+SOURCE="${BASH_SOURCE[0]}"
+
+while [ -L "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+JAR="$DIR/hive-cli/target/hive-cli.jar"
+
+if [ ! -f "$JAR" ]; then
+  echo "hive: CLI jar not found at $JAR" >&2
+  echo "hive: build it first with: mvn -pl hive-cli -am package" >&2
+  exit 1
+fi
+
+java -jar "$JAR" "$@"

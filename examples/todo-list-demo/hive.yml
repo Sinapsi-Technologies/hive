@@ -1,0 +1,4 @@
+basePackage: com.example.todo
+layout: single
+javaSourceRoot: src/main/java
+testSourceRoot: src/test/java

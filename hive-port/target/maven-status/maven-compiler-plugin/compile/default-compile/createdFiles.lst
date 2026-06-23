@@ -1,0 +1,4 @@
+io/sinapsi/hive/ports/IdGeneratorPort.class
+io/sinapsi/hive/ports/ClockPort.class
+io/sinapsi/hive/ports/PublishEventPort.class
+io/sinapsi/hive/ports/FileStoragePort.class
