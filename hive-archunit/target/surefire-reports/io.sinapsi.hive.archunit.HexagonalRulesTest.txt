@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: io.sinapsi.hive.archunit.HexagonalRulesTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.255 s -- in io.sinapsi.hive.archunit.HexagonalRulesTest
