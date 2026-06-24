@@ -1,5 +1,6 @@
 package io.sinapsi.hive.cli;
 
+import io.sinapsi.hive.cli.command.C4Command;
 import io.sinapsi.hive.cli.command.CheckCommand;
 import io.sinapsi.hive.cli.command.CreateCommand;
 import io.sinapsi.hive.cli.command.InitCommand;
@@ -12,7 +13,8 @@ import picocli.CommandLine.Command;
         subcommands = {
                 InitCommand.class,
                 CreateCommand.class,
-                CheckCommand.class
+                CheckCommand.class,
+                C4Command.class
         }
 )
 public final class HiveCli implements Runnable {

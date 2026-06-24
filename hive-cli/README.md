@@ -2,7 +2,7 @@
 
 `hive-cli` is the Picocli-based scaffolding tool for Hive projects.
 
-The CLI is intentionally small: it creates project markers, a minimal Maven `pom.xml`, basic source roots, simple use case files, optional command factories, optional module folders, ArchUnit test scaffolding, and performs a lightweight structure check.
+The CLI is intentionally small: it creates project markers, a minimal Maven `pom.xml`, basic source roots, simple use case files, optional command factories, optional module folders, ArchUnit test scaffolding, performs a lightweight structure check, and generates C4 architecture diagrams from the package structure.
 
 It does not generate full applications, Spring Boot projects, validators, or domain models. It generates output ports and outbound adapter stubs, but not their implementations.
 
@@ -529,6 +529,79 @@ Use `--force` to overwrite an existing generated architecture test:
 
 ```bash
 hive create archtest --force
+```
+
+### hive c4 generate
+
+Generates [C4](https://c4model.com/) architecture diagrams from the project's hexagonal package structure. Unlike the `init`/`create` commands, this one reads existing code rather than scaffolding new files.
+
+```bash
+hive c4 generate --module todo --render --site
+```
+
+With a `todo` module, this writes:
+
+```text
+docs/architecture/c3-todo.puml
+docs/architecture/c3-todo.svg     # only when PlantUML is available
+docs/architecture/index.html      # only with --site (or c4.generateSite: true)
+```
+
+Options:
+
+```text
+--module <name>     Module / bounded-context name. In the modular layout it selects one
+                    module; in the single layout it sets the diagram name.
+--level <level>     context | container | component. Default: component (the C3 diagram).
+--output <path>     Output directory. Default: docs/architecture.
+--format <format>   Diagram format. For now: puml.
+--render [format]   Render the generated .puml to svg or png. Default: svg.
+--site              Also generate a static index.html architecture page.
+--open              Open the generated page (or diagram) afterwards.
+--force             Overwrite generated files when they already exist.
+--json              Print a machine-readable result.
+```
+
+How it classifies code (the Hive convention):
+
+```text
+*.infrastructure.adapters.in.*    -> Inbound Adapter
+*.application.ports.in.*          -> Input Port
+*.application.services.*Service   -> Application Service
+*.domain.aggregates.*             -> Domain Aggregate
+*.application.ports.out.*         -> Output Port
+*.infrastructure.adapters.out.*   -> Outbound Adapter
+*.configurations.* / *.infrastructure.configs.*  -> Configuration
+```
+
+Relationships are inferred conservatively (exact name matching first, shared-domain-token overlap otherwise) so the diagram reads as the hexagon flow instead of a fully connected graph. Commands, value objects, entities, events, and other domain detail are scanned but hidden from the component view to keep it readable.
+
+Both layouts are supported: the single layout produces one diagram named after the base package's last segment; the modular layout (`hive create module <name>`) produces one focused diagram per module.
+
+Rendering is optional. The command looks for a `plantuml` executable on the `PATH`, or `java -jar plantuml.jar` when `c4.plantumlPath` points at a jar. If none is found, it keeps the `.puml` output and prints how to enable rendering — it does not fail. Optional `hive.yml` block:
+
+```yaml
+c4:
+  plantumlPath: plantuml
+  defaultRenderFormat: svg
+  generateSite: true
+  theme: hive
+```
+
+`--json` output is consistent with the other commands and also reports the architecture model:
+
+```json
+{
+  "command": "c4 generate",
+  "level": "component",
+  "module": "todo",
+  "output": "docs/architecture",
+  "created": ["docs/architecture/c3-todo.puml", "docs/architecture/index.html"],
+  "skipped": [],
+  "warnings": [],
+  "elements": [{ "id": "todoController", "name": "TodoController", "type": "INBOUND_ADAPTER" }],
+  "relations": [{ "source": "todoController", "target": "createTodoUseCase", "description": "calls" }]
+}
 ```
 
 ## Name Validation

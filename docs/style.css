@@ -308,6 +308,86 @@ h1 {
   color: #ffffff;
 }
 
+.c4 {
+  padding: 96px clamp(20px, 6vw, 88px);
+  background:
+    linear-gradient(135deg, rgba(53, 200, 255, 0.12), rgba(141, 102, 255, 0.08)),
+    var(--bg);
+}
+
+.c4 .section-heading {
+  margin-bottom: 36px;
+}
+
+.c4-lead {
+  max-width: 820px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.65;
+}
+
+.c4-lead code,
+.c4 figcaption code {
+  color: #ffffff;
+  font-size: 0.92em;
+}
+
+.c4-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+.c4-points {
+  display: grid;
+  gap: 12px;
+}
+
+.c4-points p {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.c4-points strong {
+  color: #ffffff;
+}
+
+.diagram-window {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.diagram-canvas {
+  padding: clamp(18px, 3vw, 32px);
+  background: #ffffff;
+}
+
+.diagram-canvas svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.diagram-window figcaption {
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(2, 6, 23, 0.88);
+  color: var(--soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .terminal-window,
 .ide-window {
   margin: 0;
@@ -394,6 +474,11 @@ code {
   color: #a9f3d0;
 }
 
+.comment {
+  color: var(--soft);
+  font-style: italic;
+}
+
 .convention {
   padding: 96px clamp(20px, 6vw, 88px);
   background: var(--bg);
@@ -471,6 +556,7 @@ code {
   .intro,
   .quick-start,
   .claude-code,
+  .c4-grid,
   .rules {
     grid-template-columns: 1fr;
   }
@@ -513,6 +599,7 @@ code {
   .intro,
   .quick-start,
   .claude-code,
+  .c4,
   .convention,
   .rules {
     padding-top: 68px;

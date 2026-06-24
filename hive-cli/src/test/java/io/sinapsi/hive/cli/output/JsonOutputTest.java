@@ -48,4 +48,30 @@ class JsonOutputTest {
 
         assertEquals(List.of("src/main/java/A.java"), relative);
     }
+
+    @Test
+    void rendersNumbersAndNestedObjects() {
+        Map<String, Object> element = new LinkedHashMap<>();
+        element.put("id", "todoController");
+        element.put("type", "INBOUND_ADAPTER");
+
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("count", 8);
+        fields.put("elements", List.of(element));
+
+        String json = JsonOutput.render(fields);
+
+        assertTrue(json.contains("\"count\": 8"), json);
+        assertTrue(json.contains("\"id\": \"todoController\""), json);
+        assertTrue(json.contains("\"type\": \"INBOUND_ADAPTER\""), json);
+    }
+
+    @Test
+    void usesAbsolutePathWhenOutsideRoot() {
+        Path root = Path.of("/tmp/project");
+
+        List<String> relative = JsonOutput.relativePaths(root, List.of(Path.of("/var/out/c3-todo.puml")));
+
+        assertEquals(List.of("/var/out/c3-todo.puml"), relative);
+    }
 }
