@@ -1,3 +1,15 @@
-io/sinapsi/hive/cli/output/JsonOutputTest.class
+io/sinapsi/hive/cli/c4/writer/PlantUmlC4WriterTest.class
 io/sinapsi/hive/cli/service/ProjectLocatorTest.class
+io/sinapsi/hive/cli/c4/scan/ArchitectureIdGeneratorTest.class
+io/sinapsi/hive/cli/command/C4GenerateCommandTest$Run.class
+io/sinapsi/hive/cli/c4/config/C4ConfigLoaderTest.class
+io/sinapsi/hive/cli/c4/scan/RelationHeuristicsTest.class
+io/sinapsi/hive/cli/command/C4GenerateCommandTest.class
+io/sinapsi/hive/cli/output/JsonOutputTest.class
+io/sinapsi/hive/cli/c4/C4TestProject.class
+io/sinapsi/hive/cli/c4/render/PlantUmlRendererTest.class
+io/sinapsi/hive/cli/c4/scan/ProjectArchitectureScannerTest.class
 io/sinapsi/hive/cli/service/FileScaffolderTest.class
+io/sinapsi/hive/cli/c4/C4GeneratorTest.class
+io/sinapsi/hive/cli/c4/scan/PackageClassifierTest.class
+io/sinapsi/hive/cli/c4/writer/ArchitectureSiteWriterTest.class

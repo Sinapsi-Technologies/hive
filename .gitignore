@@ -48,4 +48,3 @@ hs_err_pid*
 replay_pid*
 **/surefire-reports
 **/surefire-reports
-examples/document-storage-demo/target
