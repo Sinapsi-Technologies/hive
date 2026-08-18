@@ -14,6 +14,13 @@
     <description>Future CLI for generators and architecture checks.</description>
     <groupId>io.sinapsi.hive.cli</groupId>
 
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+        </license>
+    </licenses>
+
     <properties>
         <!-- Distributed as an executable jar via GitHub Releases, not to Maven Central. -->
         <maven.deploy.skip>true</maven.deploy.skip>

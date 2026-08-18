@@ -14,6 +14,13 @@
   <name>Hexagonal Toolkit Ports</name>
   <description>Framework-free abstractions for lightweight hexagonal architecture.</description>
 
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>

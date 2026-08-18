@@ -10,6 +10,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,9 @@ public final class CreateUseCaseCommand implements Callable<Integer> {
     @Option(names = "--factory", description = "Create an AbstractCommandFactory for the generated command.")
     boolean factory;
 
+    @Option(names = "--field", paramLabel = "name:Type", description = "Command field.")
+    List<String> fields = new ArrayList<>();
+
     @Option(names = "--json", description = "Print the created files as JSON.")
     boolean json;
 
@@ -36,7 +40,7 @@ public final class CreateUseCaseCommand implements Callable<Integer> {
         HiveConfig config = new HiveConfigLoader().load(root);
         String moduleName = names.size() == 2 ? names.getFirst() : null;
         String useCaseName = names.size() == 2 ? names.get(1) : names.getFirst();
-        List<Path> created = new FileScaffolder().createUseCase(root, config, moduleName, useCaseName, force, factory);
+        List<Path> created = new FileScaffolder().createUseCase(root, config, moduleName, useCaseName, force, factory, fields);
         if (json) {
             Map<String, Object> output = new LinkedHashMap<>();
             output.put("command", "create usecase");

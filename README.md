@@ -1,7 +1,7 @@
 # Hive
 
 [![CI](https://github.com/Sinapsi-Technologies/hive/actions/workflows/ci.yml/badge.svg)](https://github.com/Sinapsi-Technologies/hive/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0 / AGPL-3.0](https://img.shields.io/badge/License-Apache--2.0%20%2F%20AGPL--3.0-blue.svg)](#license)
 
 Hive is an open-source **Java 21 toolkit for building hexagonal (ports & adapters) applications** with strong boundaries and low ceremony.
 
@@ -26,7 +26,7 @@ Hive turns those decisions into a small, **repeatable, executable** convention:
 
 ## Highlights
 
-- **`hive` CLI** — `init`, `check`, `create usecase | port | adapter | module | archtest`, and `c4 generate`. Deterministic, idempotent, with machine-readable `--json` output and `// TODO:` markers at the spots meant to be filled in.
+- **`hive` CLI** — `init`, `check`, deterministic `create` generators for application and domain building blocks, and `c4 generate`. It is idempotent, machine-readable with `--json`, and leaves `// TODO:` markers at the spots meant to be filled in.
 - **Executable architecture** — `hive-archunit` ships the hexagonal rules as ArchUnit tests; `hive create archtest` wires them into your build.
 - **Visible architecture** — `hive c4 generate` reads your hexagonal packages and produces styled C4 diagrams (PlantUML → SVG) plus a static HTML page, so the structure you are building is something you can actually see.
 - **Framework-free core** — `hive-core` has no Spring, Jakarta, JPA, or persistence dependency.
@@ -77,6 +77,9 @@ To use `hive` from anywhere, alias it or symlink it onto your `PATH` — see [hi
 ```bash
 mkdir hive-demo && cd hive-demo
 hive init                              # .hive-project, hive.yml, pom.xml, source roots
+hive create id UserId
+hive create vo Email --type String --not-blank
+hive create entity User --id UserId --field email:Email
 hive create usecase CreateUser --factory
 hive create port SaveUser
 hive create adapter InMemorySaveUser --port SaveUser
@@ -116,6 +119,44 @@ hive create usecase CreateUser --json
 ```
 
 Generated files carry `// TODO:` markers at the points meant to be filled in (command fields, port methods, use-case logic, adapter implementations). Together with `--json`, this is built for a tool-driven workflow: a generator runs the deterministic CLI for the structure, reads the created paths, fills the marked spots, then lets `mvn verify` and the ArchUnit rules validate the result.
+
+### Deterministic domain generation
+
+Hive can also materialize domain primitives without inferring business semantics:
+
+```bash
+hive create vo Email --type String --not-blank --pattern ".+@.+"
+hive create vo Money --field amount:BigDecimal --field currency:String --factory
+hive create vo Quantity --type Integer --min 1
+hive create id CustomerId
+hive create entity OrderLine --id OrderLineId --field quantity:Quantity
+hive create aggregate Order --id OrderId --field status:OrderStatus
+hive create enum OrderStatus --value DRAFT --value CONFIRMED --value CANCELLED
+hive create event OrderCreated --field orderId:OrderId --field occurredAt:Instant
+hive create exception OrderAlreadyConfirmed
+hive create domainservice Pricing
+hive create snapshot OrderSnapshot --field id:OrderId --field status:OrderStatus
+```
+
+These generators write framework-free Java 21 domain code under `domain/valueobjects`, `domain/entities`, `domain/aggregates`, `domain/events`, and `domain/exceptions`. Identifiers and aggregates reuse the `hive-core` `AggregateId` / `AggregateRoot` contracts; value-object validation is generated as constructor checks, not Jakarta annotations.
+
+For non-domain boilerplate, Hive also exposes small deterministic Java generators:
+
+```bash
+hive create record CustomerResponse --field id:UUID --field tags:List<String>
+hive create class CustomerDto --field name:String --field email:String --getters --setters --all-args-constructor
+hive create command CreateOrder --field customerId:CustomerId
+hive create port LoadOrder --method "Optional<Order> load(OrderId id)"
+hive create adapter OrderPersistence --port LoadOrderPort --port SaveOrderPort
+```
+
+Blueprint files can batch the same generators:
+
+```bash
+hive generate .hive/model/order.yml
+hive generate --all
+hive inspect config --json
+```
 
 ---
 
@@ -323,8 +364,23 @@ hive create usecase <Name> [--factory] [--force] [--json]
 hive create usecase <module> <Name> [--factory] [--force] [--json]
 hive create port <Name> [--force] [--json]
 hive create adapter <Name> --port <Port> [--force] [--json]
+hive create vo <Name> [--type <Type>] [--not-null] [--not-blank] [--min <n>] [--max <n>] [--min-length <n>] [--max-length <n>] [--pattern <regex>] [--force] [--json]
+hive create id <Name> [--type UUID|Long|String] [--force] [--json]
+hive create entity <Name> --id <IdType> [--field name:Type]... [--force] [--json]
+hive create aggregate <Name> --id <IdType> [--field name:Type]... [--force] [--json]
+hive create enum <Name> --value <VALUE>... [--force] [--json]
+hive create event <Name> [--field name:Type]... [--force] [--json]
+hive create exception <Name> [--message <message>] [--force] [--json]
+hive create domainservice <Name> [--force] [--json]
+hive create snapshot <Name> [--field name:Type]... [--force] [--json]
+hive create record <Name> [--field name:Type]... [--force] [--json]
+hive create class <Name> [--field name:Type]... [--getters] [--setters] [--constructor] [--all-args-constructor] [--force] [--json]
+hive create command <Name> [--field name:Type]... [--force] [--json]
 hive create module <name> [--json]
 hive create archtest [--force] [--json]
+hive generate <file> [--force] [--json]
+hive generate --all [--force] [--json]
+hive inspect config|model|generated [--json]
 hive c4 generate [--module <name>] [--level <level>] [--output <path>] [--format <format>] [--render [svg|png]] [--site] [--open] [--force] [--json]
 ```
 
@@ -370,4 +426,11 @@ The `io.sinapsi` namespace is verified on the Central Portal with a DNS TXT reco
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+Hive uses module-level licensing:
+
+- `hive-cli` is licensed under AGPL-3.0 — see [hive-cli/LICENSE](hive-cli/LICENSE).
+- All other modules are licensed under Apache License 2.0 — see [LICENSE](LICENSE).
+
+Generated output from `hive-cli` is not automatically subject to AGPL-3.0 merely
+because it was produced by the CLI. See [hive-cli/LICENSE](hive-cli/LICENSE) for
+the generated-output notice.

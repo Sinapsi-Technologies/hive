@@ -1,41 +1,104 @@
 ---
 name: hive
-description: Scaffold and implement hexagonal (ports & adapters) features in Java projects that use the Hive toolkit. Use when the project has a .hive-project marker, or the user mentions hexagonal architecture, use cases, input/output ports, adapters, modules, or the `hive` CLI — to add or modify a slice of the application.
+description: Work on Java projects that use the Hive toolkit and its `hive` CLI. Use when the user mentions Hive, hexagonal architecture, ports and adapters, use cases, domain primitives, modules, generated scaffolding, ArchUnit rules, blueprints, or C4 diagrams.
 ---
 
-# Hive — hexagonal scaffolding & implementation
+# Hive project workflow
 
-Use this whenever the user asks to **add or change** a use case, output port, outbound adapter, or module in a Hive project. The division of labour is fixed: the deterministic `hive` CLI creates the structure (zero ambiguity, correct-by-construction); you write only the logic at the marked spots.
+Use this skill as the top-level workflow for Hive projects. Hive's rule is simple: let the deterministic CLI create structure, then edit only the generated TODOs and surrounding business logic.
 
-## 1. Detect the project
-A Hive project has a `.hive-project` marker file (walk upward from the working directory to find it). If there is none, this skill does not apply — suggest `/hive:new` to bootstrap one first.
+## Project detection
 
-## 2. Resolve the CLI
-Use `hive` if it is on the PATH; otherwise use the `./hive` launcher at the project root. (If neither runs, see the project README for how to install or build the CLI.)
+A Hive project contains `.hive-project`. Walk upward from the current directory to find it.
 
-## 3. Generate structure with the CLI — never hand-write it
-Pick the right command and always pass `--json` so you learn the exact files created:
+- If the marker exists, work from that project root.
+- If there is no marker and the user wants a new project, use `/hive:new`.
+- If there is no marker and the user wants to modify an existing project, ask them to initialize or point you to the Hive project root.
 
-- Use case:    `hive create usecase <Name> [--factory] --json`
-- Output port:  `hive create port <Name> --json`
-- Adapter:     `hive create adapter <Name> --port <Port> --json`
-- Module:      `hive create module <name> --json`  (then `hive create usecase <module> <Name> --json`)
-- Arch test:   `hive create archtest --json`
+## CLI resolution
 
-Read the `created` array from the JSON for the precise paths. Pass `--force` only when you intend to overwrite an existing file.
+Use this order:
 
-## 4. Implement: fill the `// TODO:` markers
-Open each created file and replace the `// TODO:` markers with real code:
-- command fields, output-port methods, use-case logic, adapter implementations, result fields.
+1. `hive`
+2. `./hive` from the Hive project root
+3. if inside the Hive toolkit repo, build once with `mvn -q -pl hive-cli -am package`, then use `./hive`
 
-Respect the Hive conventions:
-- **Domain stays framework-free** — no Spring, JPA, HTTP, persistence, messaging, or validation frameworks in `domain`.
-- Business logic lives in the **domain** or the **use-case service**, never in commands.
-- Commands are immutable input models: they don't validate themselves and don't build aggregates.
-- Output ports model **capabilities**, not technologies; adapters implement them.
-- Mapping is an application/adapter concern, not a domain one.
+Always prefer CLI commands over hand-written structural files.
 
-## 5. Validate — always
-Run `mvn -q verify`. The ArchUnit rules and tests are the guardrail: fix any rule, compile, or test failure before reporting done. Do not move generated files out of their packages — the rules enforce the layout.
+## Command map
 
-When finished, briefly report what you added (from the JSON) and which `// TODO:` you filled.
+Project lifecycle:
+
+```bash
+hive init [--readme] [--force] [--json]
+hive check [--json]
+hive inspect config|model|generated [--json]
+```
+
+Application layer:
+
+```bash
+hive create usecase [moduleName] <UseCaseName> [--field name:Type] [--factory] [--force] [--json]
+hive create command [moduleName] <CommandName> [--field name:Type] [--force] [--json]
+hive create port [moduleName] <PortName> [--method "ReturnType method(Type arg)"] [--force] [--json]
+hive create adapter [moduleName] <AdapterName> --port <PortName> [--port <PortName>] [--force] [--json]
+```
+
+Domain layer:
+
+```bash
+hive create vo [moduleName] <Name> [--type String|UUID|Integer|Long|BigDecimal|Boolean] [--field name:Type] [--not-null] [--not-blank] [--min value] [--max value] [--min-length n] [--max-length n] [--pattern regex] [--factory] [--force] [--json]
+hive create id [moduleName] <Name> [--type UUID|Long|String] [--force] [--json]
+hive create entity [moduleName] <Name> --id <IdType> [--field name:Type] [--force] [--json]
+hive create aggregate [moduleName] <Name> --id <IdType> [--field name:Type] [--force] [--json]
+hive create enum [moduleName] <Name> --value <VALUE> [--value <VALUE>] [--force] [--json]
+hive create event [moduleName] <Name> [--field name:Type] [--force] [--json]
+hive create exception [moduleName] <Name> [--message "Message"] [--force] [--json]
+hive create domainservice [moduleName] <Name> [--force] [--json]
+hive create snapshot [moduleName] <Name> [--field name:Type] [--force] [--json]
+```
+
+Shared/simple Java artifacts:
+
+```bash
+hive create record [moduleName] <Name> [--field name:Type] [--force] [--json]
+hive create class [moduleName] <Name> [--field name:Type] [--getters] [--setters] [--constructor] [--all-args-constructor] [--force] [--json]
+```
+
+Modules, architecture tests, blueprints, and diagrams:
+
+```bash
+hive create module <moduleName> [--json]
+hive create archtest [--force] [--json]
+hive generate <file.yml> [--force] [--json]
+hive generate --all [--force] [--json]
+hive c4 generate [--module name] [--level context|container|component] [--output path] [--format puml] [--render [svg|png]] [--site] [--open] [--force] [--json]
+```
+
+Use `hive create vo` for value objects.
+
+## Operating rules
+
+- Pass `--json` for scaffolding commands whenever you will edit the generated files; read the `created` array for exact paths.
+- Use `--force` only when the user clearly wants to overwrite existing generated files.
+- Do not move generated files out of Hive packages. ArchUnit rules enforce the layout.
+- Domain code must stay framework-free: no Spring, JPA, HTTP, persistence, messaging, or Jakarta validation annotations in `domain`.
+- Commands are immutable input models. Business logic belongs in domain types or application services.
+- Output ports describe capabilities, not technologies. Adapters implement technologies.
+- If a requested artifact maps to a CLI generator, run the CLI first. Fill TODOs after generation.
+
+## Verification
+
+For normal changes, finish with:
+
+```bash
+mvn -q verify
+```
+
+For CLI-only changes inside the Hive toolkit repository, use:
+
+```bash
+mvn -q -pl hive-cli -am test
+```
+
+Fix compile, test, and ArchUnit failures before reporting done.

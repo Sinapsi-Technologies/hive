@@ -9,6 +9,7 @@
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/c4/writer/ArchitectureSiteWriterTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/c4/writer/PlantUmlC4WriterTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/command/C4GenerateCommandTest.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/command/CreateDomainCommandTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/output/JsonOutputTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/service/FileScaffolderTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-cli/src/test/java/io/sinapsi/hive/cli/service/ProjectLocatorTest.java

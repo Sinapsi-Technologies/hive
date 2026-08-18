@@ -1,6 +1,8 @@
 package io.sinapsi.hive.cli.service;
 
 import io.sinapsi.hive.cli.model.HiveConfig;
+import io.sinapsi.hive.cli.service.FileScaffolder.ClassSpec;
+import io.sinapsi.hive.cli.service.FileScaffolder.ValueObjectSpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileScaffolderTest {
@@ -167,6 +170,246 @@ class FileScaffolderTest {
         String pom = Files.readString(tempDir.resolve("pom.xml"));
         assertEquals(1, occurrences(pom, "<artifactId>hive-core</artifactId>"));
         assertEquals(1, occurrences(pom, "<artifactId>hive-validator</artifactId>"));
+    }
+
+    @Test
+    void createValueObjectGeneratesRecordWithDeterministicConstraints() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createValueObject(
+                tempDir,
+                config,
+                null,
+                new ValueObjectSpec("Email", "String", true, true, null, null, 5, 128, ".+@.+"),
+                false
+        );
+
+        Path valueObject = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/Email.java");
+        String source = Files.readString(valueObject);
+        assertTrue(source.contains("public record Email(String value)"));
+        assertTrue(source.contains("value must not be blank"));
+        assertTrue(source.contains("value.length() < 5"));
+        assertTrue(source.contains("value.matches(\".+@.+\")"));
+        assertFilesCompile(List.of(valueObject));
+    }
+
+    @Test
+    void createIdentifierUsesAggregateIdContract() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "CustomerId", "UUID", false);
+
+        Path identifier = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/CustomerId.java");
+        String source = Files.readString(identifier);
+        assertTrue(source.contains("implements AggregateId<UUID>"));
+        assertTrue(source.contains("import java.util.UUID;"));
+        assertFilesCompile(List.of(identifier));
+    }
+
+    @Test
+    void createEntityGeneratesControlledStateWithoutSetters() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderLineId", "UUID", false);
+        scaffolder.createValueObject(
+                tempDir,
+                config,
+                null,
+                new ValueObjectSpec("Quantity", "Integer", true, false, "1", null, null, null, null),
+                false
+        );
+        scaffolder.createEntity(
+                tempDir,
+                config,
+                null,
+                "OrderLine",
+                "OrderLineId",
+                List.of("quantity:Quantity"),
+                false
+        );
+
+        Path id = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderLineId.java");
+        Path quantity = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/Quantity.java");
+        Path entity = tempDir.resolve("src/main/java/com/example/app/domain/entities/OrderLine.java");
+        String source = Files.readString(entity);
+        assertTrue(source.contains("private final OrderLineId id;"));
+        assertTrue(source.contains("private final Quantity quantity;"));
+        assertTrue(source.contains("public Quantity quantity()"));
+        assertFalse(source.contains(" set"));
+        assertFilesCompile(List.of(id, quantity, entity));
+    }
+
+    @Test
+    void createAggregateUsesAggregateRootAndDomainEventBuffer() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderId", "UUID", false);
+        scaffolder.createEnum(tempDir, config, null, "OrderStatus", List.of("DRAFT", "CONFIRMED"), false);
+        scaffolder.createAggregate(
+                tempDir,
+                config,
+                null,
+                "Order",
+                "OrderId",
+                List.of("status:OrderStatus"),
+                false
+        );
+
+        Path id = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path status = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderStatus.java");
+        Path aggregate = tempDir.resolve("src/main/java/com/example/app/domain/aggregates/Order.java");
+        String source = Files.readString(aggregate);
+        assertTrue(source.contains("implements AggregateRoot<OrderId>"));
+        assertTrue(source.contains("List<DomainEvent> domainEvents"));
+        assertTrue(source.contains("TODO: add domain behavior here"));
+        assertFilesCompile(List.of(id, status, aggregate));
+    }
+
+    @Test
+    void createEventAndExceptionGenerateFrameworkFreeDomainTypes() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderId", "UUID", false);
+        scaffolder.createEvent(tempDir, config, null, "OrderCreated", List.of("orderId:OrderId", "occurredAt:Instant"), false);
+        scaffolder.createException(tempDir, config, null, "OrderAlreadyConfirmed", false);
+
+        Path id = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path event = tempDir.resolve("src/main/java/com/example/app/domain/events/OrderCreated.java");
+        Path exception = tempDir.resolve("src/main/java/com/example/app/domain/exceptions/OrderAlreadyConfirmedException.java");
+        String eventSource = Files.readString(event);
+        assertTrue(eventSource.contains("public record OrderCreated("));
+        assertTrue(eventSource.contains("OrderId orderId"));
+        assertTrue(eventSource.contains("Instant occurredAt"));
+        assertTrue(eventSource.contains("implements DomainEvent"));
+        assertTrue(Files.readString(exception).contains("extends RuntimeException"));
+        assertFilesCompile(List.of(id, event, exception));
+    }
+
+    @Test
+    void createDomainServiceAndSnapshotGenerateCompilableDomainTypes() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderId", "UUID", false);
+        scaffolder.createEnum(tempDir, config, null, "OrderStatus", List.of("DRAFT"), false);
+        scaffolder.createDomainService(tempDir, config, null, "Pricing", false);
+        scaffolder.createSnapshot(tempDir, config, null, "OrderSnapshot", List.of("id:OrderId", "status:OrderStatus"), false);
+
+        Path id = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path status = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderStatus.java");
+        Path service = tempDir.resolve("src/main/java/com/example/app/domain/services/PricingService.java");
+        Path snapshot = tempDir.resolve("src/main/java/com/example/app/domain/snapshots/OrderSnapshot.java");
+        assertTrue(Files.readString(service).contains("TODO: add domain service behavior here"));
+        assertTrue(Files.readString(snapshot).contains("public record OrderSnapshot("));
+        assertFilesCompile(List.of(id, status, service, snapshot));
+    }
+
+    @Test
+    void createMultiFieldValueObjectAndGeneralJavaTypesSupportGenerics() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createValueObject(
+                tempDir,
+                config,
+                null,
+                new ValueObjectSpec("Money", "String", false, false, null, null, null, null, null,
+                        List.of("amount:BigDecimal", "currency:String"), true),
+                false
+        );
+        scaffolder.createRecord(tempDir, config, null, "CustomerResponse",
+                List.of("id:UUID", "tags:List<String>"), false);
+        scaffolder.createPlainClass(tempDir, config, null,
+                new ClassSpec("CustomerDto", List.of("name:String", "email:String"), true, true, true, true),
+                false);
+
+        Path money = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/Money.java");
+        Path record = tempDir.resolve("src/main/java/com/example/app/commons/CustomerResponse.java");
+        Path dto = tempDir.resolve("src/main/java/com/example/app/commons/CustomerDto.java");
+        assertTrue(Files.readString(money).contains("public static Money of(BigDecimal amount, String currency)"));
+        assertTrue(Files.readString(record).contains("import java.util.List;"));
+        assertTrue(Files.readString(dto).contains("public void setEmail(String email)"));
+        assertFilesCompile(List.of(money, record, dto));
+    }
+
+    @Test
+    void createUseCaseCommandPortAndAdapterAcceptDeterministicSignatures() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderId", "UUID", false);
+        scaffolder.createAggregate(tempDir, config, null, "Order", "OrderId", List.of(), false);
+        scaffolder.createUseCase(tempDir, config, null, "CreateOrder", false, true,
+                List.of("orderId:OrderId", "tags:List<String>"));
+        scaffolder.createCommand(tempDir, config, null, "CancelOrder", List.of("orderId:OrderId"), false);
+        scaffolder.createPort(tempDir, config, null, "LoadOrder",
+                List.of("Optional<Order> load(OrderId id)"), false);
+        scaffolder.createPort(tempDir, config, null, "SaveOrder",
+                List.of("void save(Order order)"), false);
+        scaffolder.createAdapter(tempDir, config, null, "OrderPersistence",
+                List.of("LoadOrder", "SaveOrder"), false);
+
+        Path orderId = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path order = tempDir.resolve("src/main/java/com/example/app/domain/aggregates/Order.java");
+        Path useCaseCommand = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CreateOrderCommand.java");
+        Path command = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CancelOrderCommand.java");
+        Path loadPort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/LoadOrderPort.java");
+        Path savePort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/SaveOrderPort.java");
+        Path adapter = tempDir.resolve("src/main/java/com/example/app/infrastructure/adapters/out/OrderPersistenceAdapter.java");
+        assertTrue(Files.readString(useCaseCommand).contains("List<String> tags"));
+        assertTrue(Files.readString(command).contains("implements Command"));
+        assertTrue(Files.readString(loadPort).contains("Optional<Order> load(OrderId id);"));
+        assertTrue(Files.readString(adapter).contains("implements LoadOrderPort, SaveOrderPort"));
+        assertTrue(Files.readString(adapter).contains("public Optional<Order> load(OrderId id)"));
+        assertTrue(Files.readString(adapter).contains("public void save(Order order)"));
+        assertFilesCompile(List.of(orderId, order, useCaseCommand, command, loadPort, savePort, adapter));
+    }
+
+    @Test
+    void blueprintGenerationReusesDeterministicGenerators() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+        Path model = tempDir.resolve(".hive/model/order.yml");
+        Files.createDirectories(model.getParent());
+        Files.writeString(model, """
+                version: 1
+
+                types:
+                  - kind: id
+                    name: OrderId
+                    type: UUID
+                  - kind: aggregate
+                    name: Order
+                    id: OrderId
+                  - kind: outputPort
+                    name: LoadOrder
+                    methods:
+                      - returnType: Optional<Order>
+                        name: load
+                        parameters:
+                          - name: id
+                            type: OrderId
+                  - kind: adapter
+                    name: OrderPersistence
+                    ports:
+                      - LoadOrder
+                """);
+
+        List<Path> created = new BlueprintGenerator().generateAll(tempDir, config, false);
+
+        Path orderId = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path order = tempDir.resolve("src/main/java/com/example/app/domain/aggregates/Order.java");
+        Path port = tempDir.resolve("src/main/java/com/example/app/application/ports/out/LoadOrderPort.java");
+        Path adapter = tempDir.resolve("src/main/java/com/example/app/infrastructure/adapters/out/OrderPersistenceAdapter.java");
+        assertEquals(4, created.size());
+        assertTrue(Files.readString(port).contains("Optional<Order> load(OrderId id);"));
+        assertTrue(Files.readString(adapter).contains("public Optional<Order> load(OrderId id)"));
+        assertFilesCompile(List.of(orderId, order, port, adapter));
     }
 
     private void assertFilesCompile(List<Path> sourceFiles) throws Exception {
