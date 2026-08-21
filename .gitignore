@@ -48,3 +48,5 @@ hs_err_pid*
 replay_pid*
 **/surefire-reports
 **/surefire-reports
+hive-cli/target
+.claude
