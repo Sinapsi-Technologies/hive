@@ -49,3 +49,4 @@ replay_pid*
 **/surefire-reports
 **/surefire-reports
 hive-cli/target
+.claude
