@@ -11,7 +11,20 @@ import picocli.CommandLine.Command;
                 CreatePortCommand.class,
                 CreateAdapterCommand.class,
                 CreateModuleCommand.class,
-                CreateArchTestCommand.class
+                CreateArchTestCommand.class,
+                CreateValueObjectCommand.class,
+                CreateIdCommand.class,
+                CreateEntityCommand.class,
+                CreateAggregateCommand.class,
+                CreateEnumCommand.class,
+                CreateEventCommand.class,
+                CreateExceptionCommand.class,
+                CreateDomainServiceCommand.class,
+                CreateSnapshotCommand.class,
+                CreateRecordCommand.class,
+                CreatePlainClassCommand.class,
+                CreateApplicationCommandCommand.class,
+                CreateInboundCommand.class
         }
 )
 public final class CreateCommand implements Runnable {

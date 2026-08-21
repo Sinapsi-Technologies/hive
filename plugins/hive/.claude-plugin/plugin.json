@@ -1,6 +1,6 @@
 {
   "name": "hive",
-  "description": "Bootstrap and evolve hexagonal (ports & adapters) Java projects with the Hive toolkit CLI. Drives the deterministic `hive` CLI for structure and fills in the generated // TODO: markers.",
+  "description": "Bootstrap and evolve hexagonal Java projects with the Hive toolkit CLI. Maps project lifecycle, deterministic code generation, blueprints, inspection, and C4 diagrams to the real `hive` command surface.",
   "version": "0.1.0",
   "author": {
     "name": "Sinapsi Technologies",
@@ -14,6 +14,8 @@
     "ports-and-adapters",
     "architecture",
     "java",
-    "scaffolding"
+    "scaffolding",
+    "codegen",
+    "c4"
   ]
 }

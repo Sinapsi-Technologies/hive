@@ -10,6 +10,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,9 @@ public final class CreatePortCommand implements Callable<Integer> {
     @Option(names = "--force", description = "Overwrite existing generated files.")
     boolean force;
 
+    @Option(names = "--method", paramLabel = "SIGNATURE", description = "Output port method signature.")
+    List<String> methods = new ArrayList<>();
+
     @Option(names = "--json", description = "Print the created files as JSON.")
     boolean json;
 
@@ -33,7 +37,7 @@ public final class CreatePortCommand implements Callable<Integer> {
         HiveConfig config = new HiveConfigLoader().load(root);
         String moduleName = names.size() == 2 ? names.getFirst() : null;
         String portName = names.size() == 2 ? names.get(1) : names.getFirst();
-        List<Path> created = new FileScaffolder().createPort(root, config, moduleName, portName, force);
+        List<Path> created = new FileScaffolder().createPort(root, config, moduleName, portName, methods, force);
         if (json) {
             Map<String, Object> output = new LinkedHashMap<>();
             output.put("command", "create port");

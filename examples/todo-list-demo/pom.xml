@@ -15,6 +15,13 @@
     <description>Spring Boot example: a todo-list aggregate with entities, value objects, domain events,
         an outbound repository port + adapter, command validation, and a REST controller.</description>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
     <properties>
         <!-- Example module: built and tested, but never published to Maven Central. -->
         <maven.deploy.skip>true</maven.deploy.skip>

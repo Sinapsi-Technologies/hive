@@ -4,7 +4,7 @@
 
 The CLI is intentionally small: it creates project markers, a minimal Maven `pom.xml`, basic source roots, simple use case files, optional command factories, optional module folders, ArchUnit test scaffolding, performs a lightweight structure check, and generates C4 architecture diagrams from the package structure.
 
-It does not generate full applications, Spring Boot projects, validators, or domain models. It generates output ports and outbound adapter stubs, but not their implementations.
+It does not generate full applications, Spring Boot projects, validators, repositories, or adapter implementations. It creates the architectural structure and framework-free Java types that are deterministic; the developer or coding agent still decides the business behavior.
 
 ## Command Name
 
@@ -115,6 +115,15 @@ Create a use case:
 
 ```bash
 hive create usecase CreateUser
+```
+
+Create domain primitives:
+
+```bash
+hive create id UserId
+hive create vo Email --type String --not-blank
+hive create entity User --id UserId --field email:Email
+hive create port LoadUser --method "Optional<User> load(UserId id)"
 ```
 
 Create a use case with a command factory:
@@ -294,30 +303,26 @@ hive create usecase CreateUser
 With the default config, this creates:
 
 ```text
-src/main/java/com/example/app/application/ports/in/commands/CreateUserCommand.java
 src/main/java/com/example/app/application/ports/in/CreateUserUseCase.java
 src/main/java/com/example/app/application/services/CreateUserService.java
 ```
 
-With `--factory`, it also creates:
+The command also ensures `pom.xml` contains `hive-core` and `hive-validator`.
 
-```text
-src/main/java/com/example/app/application/ports/in/commands/CreateUserCommandFactory.java
-```
-
-The command also ensures `pom.xml` contains `hive-core`. When `--factory` is used, it adds `hive-validator` as well.
-
-Generated command:
+Generated input port with nested command:
 
 ```java
-public record CreateUserCommand() implements Command {
-}
-```
+public interface CreateUserUseCase extends UseCase<CreateUserUseCase.CreateUserCommand, Result> {
+    public final class CreateUserCommand implements Command {
+        private CreateUserCommand() {
+        }
 
-Generated input port:
-
-```java
-public interface CreateUserUseCase extends UseCase<CreateUserCommand, Result> {
+        public static final class Factory extends AbstractCommandFactory<CreateUserCommand> {
+            public CreateUserCommand create() {
+                return validate(new CreateUserCommand());
+            }
+        }
+    }
 }
 ```
 
@@ -326,7 +331,7 @@ Generated service:
 ```java
 public final class CreateUserService implements CreateUserUseCase {
     @Override
-    public Result handle(CreateUserCommand input) {
+    public Result handle(CreateUserUseCase.CreateUserCommand input) {
         return new CreateUserResult();
     }
 
@@ -335,15 +340,7 @@ public final class CreateUserService implements CreateUserUseCase {
 }
 ```
 
-Generated factory:
-
-```java
-public final class CreateUserCommandFactory extends AbstractCommandFactory<CreateUserCommand> {
-    public CreateUserCommand create() {
-        return validate(new CreateUserCommand());
-    }
-}
-```
+`CreateUserCommand` is an immutable final class with a private constructor, nested `Factory`, and record-style accessors for any fields. The nested Factory is the supported construction path, so application command validation cannot be bypassed by direct construction. Standalone commands created with `hive create command` continue to be generated as separate files under `application/ports/in/commands`, using the same immutable class shape.
 
 The generated factory uses `hive-validator`; the CLI adds this dependency when it is missing:
 
@@ -369,6 +366,12 @@ Without `--force`, the CLI refuses to overwrite existing files.
 hive create usecase CreateUser --factory --force
 ```
 
+Use repeated `--field name:Type` to populate the generated command record without changing the rest of the use-case structure:
+
+```bash
+hive create usecase CreateUser --field name:String --field email:Email
+```
+
 ### hive create port
 
 Generates an output port under `application.ports.out`.
@@ -390,12 +393,22 @@ public interface SaveUserPort extends OutputPort {
 
 The `Port` suffix is added automatically when missing, so `SaveUser` and `SaveUserPort` produce the same file. A leading module name and `--force` are supported.
 
+Use repeated `--method` for deterministic output-port signatures:
+
+```bash
+hive create port LoadOrder --method "Optional<Order> load(OrderId id)"
+hive create port SaveOrder --method "void save(Order order)"
+```
+
+Method parsing is intentionally limited to common Java signatures and simple generics such as `Optional<Order>`, `List<Order>`, `Set<String>`, and `Map<String, String>`. Unsupported signatures fail clearly instead of being guessed.
+
 ### hive create adapter
 
 Generates an outbound adapter under `infrastructure.adapters.out` implementing an output port. The port is required via `--port`.
 
 ```bash
 hive create adapter InMemorySaveUser --port SaveUser
+hive create adapter OrderPersistence --group persistence --port LoadOrderPort --port SaveOrderPort
 ```
 
 With the default config, this creates:
@@ -410,6 +423,337 @@ public final class InMemorySaveUserAdapter implements SaveUserPort {
 ```
 
 The `Adapter` suffix is added automatically when missing. A leading module name and `--force` are supported.
+
+Use `--group <group>` to place outbound adapters under a cohesive subpackage such as `infrastructure.adapters.out.persistence`, `infrastructure.adapters.out.payment`, or another project-specific integration concern. Without `--group`, adapters are generated directly under `infrastructure.adapters.out`.
+
+Adapters can implement multiple output ports by repeating `--port`:
+
+```bash
+hive create adapter OrderPersistence --port LoadOrderPort --port SaveOrderPort
+```
+
+When the referenced generated ports already contain deterministic method declarations, the adapter emits matching method skeletons with TODO markers and neutral default returns. It never infers persistence technology or repository code.
+
+### hive create vo
+
+Generates a scalar-backed value object under `domain.valueobjects`.
+
+```bash
+hive create vo Email --type String --not-blank
+hive create vo CustomerId --type UUID
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/valueobjects/Email.java
+```
+
+Generated value objects use Java records:
+
+```java
+public record Email(String value) {
+    public Email {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("value must not be blank");
+        }
+    }
+}
+```
+
+Supported scalar types:
+
+```text
+String
+UUID
+Integer
+Long
+BigDecimal
+Boolean
+```
+
+Supported deterministic constraints:
+
+```text
+--not-null
+--not-blank
+--min <value>
+--max <value>
+--min-length <value>
+--max-length <value>
+--pattern <regex>
+```
+
+String-only constraints are `--not-blank`, `--min-length`, `--max-length`, and `--pattern`. Numeric constraints are supported for `Integer`, `Long`, and `BigDecimal`. Validation is framework-free and generated as constructor checks; the CLI does not add Jakarta annotations to domain objects.
+
+Multi-field value objects are supported with repeated `--field`; in that mode scalar constraints are rejected because there is no single `value` component:
+
+```bash
+hive create vo Money --field amount:BigDecimal --field currency:String --factory
+```
+
+`--factory` adds a deterministic static `of(...)` constructor helper.
+
+### hive create id
+
+Generates an identifier under `domain.valueobjects`.
+
+```bash
+hive create id CustomerId
+hive create id LegacyCustomerId --type Long
+hive create id ExternalOrderId --type String
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/valueobjects/CustomerId.java
+```
+
+Generated identifiers reuse the `hive-core` aggregate identifier contract:
+
+```java
+public record CustomerId(UUID value) implements AggregateId<UUID> {
+    public CustomerId {
+        if (value == null) {
+            throw new IllegalArgumentException("value must not be null");
+        }
+    }
+}
+```
+
+Supported backing types are `UUID`, `Long`, and `String`. The default is `UUID`.
+
+### hive create entity
+
+Generates a domain entity under `domain.entities`.
+
+```bash
+hive create entity OrderLine --id OrderLineId --field productId:ProductId --field quantity:Quantity
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/entities/OrderLine.java
+```
+
+Generated entities keep state controlled: fields are `final`, constructor-initialized, and no setters are generated.
+
+```java
+public final class OrderLine {
+    private final OrderLineId id;
+    private final ProductId productId;
+    private final Quantity quantity;
+
+    public OrderLine(OrderLineId id, ProductId productId, Quantity quantity) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        this.id = id;
+        this.productId = productId;
+        this.quantity = quantity;
+    }
+
+    public OrderLineId getId() {
+        return id;
+    }
+
+    public ProductId productId() {
+        return productId;
+    }
+
+    public Quantity quantity() {
+        return quantity;
+    }
+}
+```
+
+`--field` may be repeated and must use `name:Type` syntax.
+
+### hive create aggregate
+
+Generates an aggregate under `domain.aggregates`.
+
+```bash
+hive create aggregate Order --id OrderId --field status:OrderStatus
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/aggregates/Order.java
+```
+
+Generated aggregates implement `AggregateRoot<ID>` and include a small domain-event buffer, but do not infer behavior:
+
+```java
+public final class Order implements AggregateRoot<OrderId> {
+    private final OrderId id;
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
+    private final OrderStatus status;
+
+    public Order(OrderId id, OrderStatus status) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        this.id = id;
+        this.status = status;
+    }
+
+    @Override
+    public OrderId getId() {
+        return id;
+    }
+
+    @Override
+    public List<DomainEvent> pullDomainEvents() {
+        List<DomainEvent> events = List.copyOf(domainEvents);
+        domainEvents.clear();
+        return events;
+    }
+
+    // TODO: add domain behavior here.
+}
+```
+
+`--field` may be repeated and must use `name:Type` syntax.
+
+### hive create enum
+
+Generates a domain enum under `domain.valueobjects`.
+
+```bash
+hive create enum OrderStatus --value DRAFT --value CONFIRMED --value CANCELLED
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/valueobjects/OrderStatus.java
+```
+
+At least one `--value` is required. Values are normalized to uppercase Java enum constants.
+
+### hive create event
+
+Generates a domain event under `domain.events`.
+
+```bash
+hive create event OrderCreated --field orderId:OrderId --field occurredAt:Instant
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/events/OrderCreated.java
+```
+
+Generated events are immutable records implementing `DomainEvent`:
+
+```java
+public record OrderCreated(OrderId orderId, Instant occurredAt) implements DomainEvent {
+}
+```
+
+No event bus or infrastructure dependency is generated.
+
+### hive create exception
+
+Generates a framework-free domain exception under `domain.exceptions`.
+
+```bash
+hive create exception OrderAlreadyConfirmed
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/exceptions/OrderAlreadyConfirmedException.java
+```
+
+The `Exception` suffix is added automatically when missing.
+
+Use `--message` to generate a default constructor with a fixed message:
+
+```bash
+hive create exception OrderAlreadyConfirmed --message "Order is already confirmed"
+```
+
+### hive create domainservice
+
+Generates a framework-free domain service skeleton under `domain.services`.
+
+```bash
+hive create domainservice Pricing
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/services/PricingService.java
+```
+
+The `Service` suffix is added automatically when missing. The generated class contains only a TODO marker for domain behavior.
+
+### hive create snapshot
+
+Generates an immutable snapshot record under `domain.snapshots`.
+
+```bash
+hive create snapshot OrderSnapshot --field id:OrderId --field status:OrderStatus
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/domain/snapshots/OrderSnapshot.java
+```
+
+### hive create record
+
+Generates a deterministic Java record under `commons`.
+
+```bash
+hive create record CustomerResponse --field id:UUID --field tags:List<String>
+```
+
+With the default config, this creates:
+
+```text
+src/main/java/com/example/app/commons/CustomerResponse.java
+```
+
+Common JDK imports such as `UUID`, `BigDecimal`, `Instant`, `Optional`, `List`, `Set`, and `Map` are resolved deterministically.
+
+### hive create class
+
+Generates a deterministic plain Java class under `commons`.
+
+```bash
+hive create class CustomerDto --field name:String --field email:String --getters --setters --all-args-constructor
+```
+
+Supported options:
+
+```text
+--getters
+--setters
+--constructor
+--all-args-constructor
+```
+
+Setters are never generated unless `--setters` is passed. No Lombok dependency is added.
+
+### hive create command
+
+Generates an immutable application command class under `application.ports.in.commands`.
+
+```bash
+hive create command CreateOrder --field customerId:CustomerId
+```
+
+The `Command` suffix is added automatically when missing. The generated class is `final`, implements `io.sinapsi.hive.core.command.Command`, stores properties in `private final` fields, has a private constructor, exposes record-style accessors, and includes a nested `Factory` that extends `AbstractCommandFactory`.
 
 ### hive create module
 
@@ -464,18 +808,11 @@ hive create usecase customer RegisterCustomer
 With the default config, this creates:
 
 ```text
-src/main/java/com/example/app/modules/customer/application/ports/in/commands/RegisterCustomerCommand.java
 src/main/java/com/example/app/modules/customer/application/ports/in/RegisterCustomerUseCase.java
 src/main/java/com/example/app/modules/customer/application/services/RegisterCustomerService.java
 ```
 
-With `--factory`, it also creates:
-
-```text
-src/main/java/com/example/app/modules/customer/application/ports/in/commands/RegisterCustomerCommandFactory.java
-```
-
-As with single-context use cases, `hive-core` is ensured and `hive-validator` is added when `--factory` is used.
+As with single-context use cases, `RegisterCustomerCommand` is nested inside `RegisterCustomerUseCase`; `--factory` nests `RegisterCustomerCommand.Factory` there too, ensures `hive-core`, and adds `hive-validator`.
 
 Use `--force` to overwrite existing generated files:
 
@@ -628,7 +965,7 @@ Module names are converted to package names.
 
 ## Current Generated Layout
 
-The current MVP generator creates this application layout:
+The generators target the standard Hive package convention:
 
 ```text
 application
@@ -637,6 +974,12 @@ application
       commands
     out
   services
+domain
+  valueobjects
+  aggregates
+  events
+  entities
+  exceptions
 ```
 
 For modules, `hive create module` creates the broader Hive package convention:
@@ -678,8 +1021,10 @@ The MVP does not generate:
 - Jakarta validation SPI files
 - adapters from `hive-adapter`
 - Spring Boot configuration
-- domain aggregates, entities, or value objects
 - output port implementations
+- persistence repositories or technology-specific data access
+- generated artifact manifests and hash-based regeneration safety
+- `hive diff`, `hive explain`, and cross-artifact merge semantics
 - modular ACL contracts
 
 These are expected future additions.
@@ -712,3 +1057,18 @@ hive create port SaveUser --json
 - Existing files are protected unless `--force` is passed.
 - The CLI is project-local and uses `.hive-project` to find the root.
 - The CLI is intentionally lightweight and library-first.
+
+## License
+
+`hive-cli` is licensed under AGPL-3.0. See [LICENSE](LICENSE).
+
+The AGPL-3.0 license applies to the CLI program itself. Source files and other
+artifacts generated by running `hive-cli` are not automatically subject to
+AGPL-3.0 merely because they were generated by the CLI. Generated output remains
+under the license chosen by the user/project, except to the extent that an
+output artifact contains substantial copyrightable HIVE-authored code or
+template material copied into it. The generic generators are intended to emit
+original structural skeletons rather than substantial copied portions of the CLI
+implementation.
+
+This is a statement of project licensing intent, not legal advice.
