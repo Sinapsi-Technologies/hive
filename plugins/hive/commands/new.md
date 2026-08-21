@@ -29,4 +29,4 @@ Read the `created` array from the `--json` output to confirm the exact files. Th
 - Never create structural files by hand — always go through `hive create …`.
 - Use `hive create vo` for value objects.
 - Don't move generated files out of their packages; the ArchUnit rules enforce the layout.
-- When done, summarize what was created (from the JSON) and how to add features next (the `hive` skill, or `hive create usecase|port|adapter|module`).
+- When done, summarize what was created (from the JSON) and how to add features next (the `hive` skill, or `hive create usecase|port|adapter|inbound|module`).

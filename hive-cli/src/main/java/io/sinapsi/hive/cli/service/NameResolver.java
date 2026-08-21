@@ -1,5 +1,6 @@
 package io.sinapsi.hive.cli.service;
 
+import javax.lang.model.SourceVersion;
 import java.nio.file.Path;
 
 public final class NameResolver {
@@ -9,6 +10,14 @@ public final class NameResolver {
 
     public String modulePackageName(String moduleName) {
         return toLowerCamel(moduleName.replace('-', '_'));
+    }
+
+    public String requirePackageSegment(String label, String value) {
+        String resolved = toLowerCamel(value == null ? "" : value.replace('-', '_'));
+        if (resolved.isBlank() || !SourceVersion.isIdentifier(resolved) || SourceVersion.isKeyword(resolved)) {
+            throw new IllegalArgumentException("Invalid " + label + " package segment: " + value);
+        }
+        return resolved;
     }
 
     public Path packageDirectory(Path sourceRoot, String packageName) {

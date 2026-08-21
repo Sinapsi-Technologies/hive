@@ -25,6 +25,14 @@ Use this order:
 
 Always prefer CLI commands over hand-written structural files.
 
+For blueprint syntax discovery, the only authoritative source is the installed CLI:
+
+```bash
+hive blueprint schema --json
+```
+
+Do not inspect `BlueprintGenerator`, parser source files, README examples, or skill text to reconstruct blueprint syntax. If `hive blueprint schema --json` is unavailable, resolve or build the CLI first; if it is still unavailable, stop and report that the installed CLI cannot expose its blueprint contract.
+
 ## Command map
 
 Project lifecycle:
@@ -35,14 +43,25 @@ hive check [--json]
 hive inspect config|model|generated [--json]
 ```
 
-Application layer:
+Application layer and outbound adapters:
 
 ```bash
 hive create usecase [moduleName] <UseCaseName> [--field name:Type] [--factory] [--force] [--json]
 hive create command [moduleName] <CommandName> [--field name:Type] [--force] [--json]
 hive create port [moduleName] <PortName> [--method "ReturnType method(Type arg)"] [--force] [--json]
-hive create adapter [moduleName] <AdapterName> --port <PortName> [--port <PortName>] [--force] [--json]
+hive create adapter [moduleName] <AdapterName> --port <PortName> [--port <PortName>] [--group <group>] [--force] [--json]
 ```
+
+Inbound adapters:
+
+```bash
+hive create inbound rest [moduleName] <ControllerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--operation "METHOD /path -> UseCaseName"] [--force] [--json]
+hive create inbound mcp [moduleName] <ToolName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
+hive create inbound listener [moduleName] <ListenerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
+hive create inbound scheduler [moduleName] <SchedulerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
+```
+
+Use `hive create inbound ...` for REST controllers/resources, MCP tools, message listeners/consumers, and schedulers/system triggers. Do not use `hive create adapter` for inbound artifacts; `adapter` means outbound implementation of output ports only.
 
 Domain layer:
 
@@ -70,6 +89,8 @@ Modules, architecture tests, blueprints, and diagrams:
 ```bash
 hive create module <moduleName> [--json]
 hive create archtest [--force] [--json]
+hive blueprint schema [--kind kind] [--json]
+hive blueprint validate <file.yml> [--json]
 hive generate <file.yml> [--force] [--json]
 hive generate --all [--force] [--json]
 hive c4 generate [--module name] [--level context|container|component] [--output path] [--format puml] [--render [svg|png]] [--site] [--open] [--force] [--json]
@@ -84,7 +105,12 @@ Use `hive create vo` for value objects.
 - Do not move generated files out of Hive packages. ArchUnit rules enforce the layout.
 - Domain code must stay framework-free: no Spring, JPA, HTTP, persistence, messaging, or Jakarta validation annotations in `domain`.
 - Commands are immutable input models. Business logic belongs in domain types or application services.
+- Generated Commands are immutable final classes with private final properties, private constructors, nested `Factory` construction, and record-style accessors. Commands generated as part of a UseCase are nested in the generated UseCase contract. Standalone `hive create command` artifacts remain standalone.
 - Output ports describe capabilities, not technologies. Adapters implement technologies.
+- Inbound adapters call existing application UseCases. Create the UseCase first when it does not exist; do not expect `create inbound` to create one implicitly.
+- Keep inbound framework or SDK types in `infrastructure/adapters/in/...`; never introduce HTTP, MCP, broker, scheduler, or framework types into domain, application, Command, or UseCase classes.
+- For blueprint files, call `hive blueprint schema --json` instead of relying on remembered syntax, source code, docs, or examples. The installed CLI is authoritative for supported blueprint kinds, fields, constraints, and aliases.
+- Before `hive generate <file.yml>`, run `hive blueprint validate <file.yml> --json` and fix any machine-readable diagnostics.
 - If a requested artifact maps to a CLI generator, run the CLI first. Fill TODOs after generation.
 
 ## Verification

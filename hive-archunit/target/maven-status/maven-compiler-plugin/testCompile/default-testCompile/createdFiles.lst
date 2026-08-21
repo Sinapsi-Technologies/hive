@@ -8,4 +8,5 @@ io/sinapsi/hive/archunit/fixtures/violations/domaindep/domain/OrderEntity.class
 io/sinapsi/hive/archunit/HexagonalRulesTest.class
 io/sinapsi/hive/archunit/fixtures/violations/domaindep/application/OrderWorkflow.class
 io/sinapsi/hive/archunit/fixtures/compliant/application/ports/out/StorePort.class
+io/sinapsi/hive/archunit/fixtures/compliant/infrastructure/adapters/out/persistence/PersistentStoreAdapter.class
 io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/RegisterUseCase.class

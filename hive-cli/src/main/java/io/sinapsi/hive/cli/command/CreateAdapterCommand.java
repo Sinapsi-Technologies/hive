@@ -25,6 +25,9 @@ public final class CreateAdapterCommand implements Callable<Integer> {
     @Option(names = "--port", required = true, paramLabel = "PORT", description = "Output port the adapter implements.")
     List<String> ports;
 
+    @Option(names = "--group", paramLabel = "GROUP", description = "Outbound adapter package group.")
+    String group;
+
     @Option(names = "--force", description = "Overwrite existing generated files.")
     boolean force;
 
@@ -33,12 +36,16 @@ public final class CreateAdapterCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        Path root = new ProjectLocator().locate(Path.of("."))
+        return call(Path.of("."));
+    }
+
+    Integer call(Path start) throws Exception {
+        Path root = new ProjectLocator().locate(start)
                 .orElseThrow(() -> new IllegalStateException("No .hive-project found"));
         HiveConfig config = new HiveConfigLoader().load(root);
         String moduleName = names.size() == 2 ? names.getFirst() : null;
         String adapterName = names.size() == 2 ? names.get(1) : names.getFirst();
-        List<Path> created = new FileScaffolder().createAdapter(root, config, moduleName, adapterName, ports, force);
+        List<Path> created = new FileScaffolder().createAdapter(root, config, moduleName, adapterName, ports, group, force);
         if (json) {
             java.util.Map<String, Object> output = new java.util.LinkedHashMap<>();
             output.put("command", "create adapter");

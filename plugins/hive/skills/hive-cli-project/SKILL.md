@@ -1,6 +1,6 @@
 ---
 name: hive-cli-project
-description: Initialize, check, inspect, and verify Hive CLI projects. Use when the user asks to bootstrap a Hive project, run `hive init`, validate structure, inspect Hive metadata, add ArchUnit rules, or diagnose project setup.
+description: Initialize, check, inspect, and verify Hive CLI projects. Use when the user asks to bootstrap a Hive project, run `hive init`, validate project structure or blueprint files, inspect Hive metadata, add ArchUnit rules, or diagnose project setup.
 ---
 
 # Hive CLI project lifecycle
@@ -43,6 +43,8 @@ hive check --json
 hive inspect config --json
 hive inspect model --json
 hive inspect generated --json
+hive blueprint schema --json
+hive blueprint validate <file.yml> --json
 ```
 
 `hive check` exit codes:
@@ -52,6 +54,8 @@ hive inspect generated --json
 1  project found, but expected files or directories are missing
 2  no .hive-project marker was found
 ```
+
+For blueprint files, the installed CLI is authoritative for the supported format. Use `hive blueprint schema --json` to discover the contract for this HIVE version, and `hive blueprint validate <file.yml> --json` before `hive generate`. Do not duplicate blueprint kind lists or field syntax in the skill, and do not inspect parser source files to infer the contract. If schema is unavailable, resolve or build the CLI first.
 
 ## Architecture test
 

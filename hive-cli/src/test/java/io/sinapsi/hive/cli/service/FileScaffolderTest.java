@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileScaffolderTest {
@@ -40,17 +41,37 @@ class FileScaffolderTest {
         HiveConfig config = HiveConfig.defaults();
         scaffolder.init(tempDir, config, false, false);
 
-        scaffolder.createUseCase(tempDir, config, null, "CreateUser", false, false);
+        scaffolder.createIdentifier(tempDir, config, null, "OrganizerId", "UUID", false);
+        scaffolder.createIdentifier(tempDir, config, null, "EventId", "UUID", false);
+        scaffolder.createUseCase(tempDir, config, null, "CancelEvent", false, false,
+                List.of("organizerId:OrganizerId", "eventId:EventId"));
 
         Path packageRoot = tempDir.resolve("src/main/java/com/example/app/application");
-        assertTrue(Files.exists(packageRoot.resolve("ports/in/commands/CreateUserCommand.java")));
-        assertTrue(Files.exists(packageRoot.resolve("ports/in/CreateUserUseCase.java")));
-        assertTrue(Files.exists(packageRoot.resolve("services/CreateUserService.java")));
-        assertTrue(Files.readString(packageRoot.resolve("services/CreateUserService.java")).contains("TODO"));
+        Path useCase = packageRoot.resolve("ports/in/CancelEventUseCase.java");
+        Path service = packageRoot.resolve("services/CancelEventService.java");
+        String source = Files.readString(useCase);
+        assertTrue(Files.exists(useCase));
+        assertTrue(Files.exists(service));
+        assertTrue(Files.notExists(packageRoot.resolve("ports/in/commands/CancelEventCommand.java")));
+        assertTrue(source.contains("extends UseCase<CancelEventUseCase.CancelEventCommand, Result>"));
+        assertTrue(source.contains("public final class CancelEventCommand implements Command"));
+        assertFalse(source.contains("record CancelEventCommand"));
+        assertTrue(source.contains("private final OrganizerId organizerId;"));
+        assertTrue(source.contains("private final EventId eventId;"));
+        assertTrue(source.contains("private CancelEventCommand(OrganizerId organizerId, EventId eventId)"));
+        assertTrue(source.contains("OrganizerId organizerId"));
+        assertTrue(source.contains("EventId eventId"));
+        assertTrue(source.contains("public static final class Factory extends AbstractCommandFactory<CancelEventCommand>"));
+        assertTrue(source.contains("return validate(new CancelEventCommand(organizerId, eventId));"));
+        assertTrue(source.contains("public OrganizerId organizerId()"));
+        assertTrue(source.contains("public EventId eventId()"));
+        assertFalse(source.contains("setOrganizerId"));
+        assertTrue(Files.readString(service).contains("handle(CancelEventUseCase.CancelEventCommand input)"));
         assertFilesCompile(List.of(
-                packageRoot.resolve("ports/in/commands/CreateUserCommand.java"),
-                packageRoot.resolve("ports/in/CreateUserUseCase.java"),
-                packageRoot.resolve("services/CreateUserService.java")
+                tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrganizerId.java"),
+                tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/EventId.java"),
+                useCase,
+                service
         ));
     }
 
@@ -59,17 +80,119 @@ class FileScaffolderTest {
         HiveConfig config = HiveConfig.defaults();
         scaffolder.init(tempDir, config, false, false);
 
-        scaffolder.createUseCase(tempDir, config, null, "CreateUser", false, true);
+        scaffolder.createIdentifier(tempDir, config, null, "OrganizerId", "UUID", false);
+        scaffolder.createIdentifier(tempDir, config, null, "EventId", "UUID", false);
+        scaffolder.createUseCase(tempDir, config, null, "CancelEvent", false, true,
+                List.of("organizerId:OrganizerId", "eventId:EventId"));
 
         Path packageRoot = tempDir.resolve("src/main/java/com/example/app/application");
-        assertTrue(Files.exists(packageRoot.resolve("ports/in/commands/CreateUserCommandFactory.java")));
+        Path useCase = packageRoot.resolve("ports/in/CancelEventUseCase.java");
+        Path service = packageRoot.resolve("services/CancelEventService.java");
+        String source = Files.readString(useCase);
+        assertTrue(source.contains("public final class CancelEventCommand implements Command"));
+        assertFalse(source.contains("record CancelEventCommand"));
+        assertTrue(source.contains("public static final class Factory extends AbstractCommandFactory<CancelEventCommand>"));
+        assertTrue(source.contains("public CancelEventCommand create(OrganizerId organizerId, EventId eventId)"));
+        assertTrue(source.contains("return validate(new CancelEventCommand(organizerId, eventId));"));
+        assertTrue(Files.notExists(packageRoot.resolve("ports/in/commands/CancelEventCommand.java")));
+        assertTrue(Files.notExists(packageRoot.resolve("ports/in/commands/CancelEventCommandFactory.java")));
         assertPomContains("hive-validator");
         assertFilesCompile(List.of(
-                packageRoot.resolve("ports/in/commands/CreateUserCommand.java"),
-                packageRoot.resolve("ports/in/commands/CreateUserCommandFactory.java"),
-                packageRoot.resolve("ports/in/CreateUserUseCase.java"),
-                packageRoot.resolve("services/CreateUserService.java")
+                tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrganizerId.java"),
+                tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/EventId.java"),
+                useCase,
+                service
         ));
+    }
+
+    @Test
+    void createUseCaseWithFactoryAndModuleNestsCommandInModuleUseCase() throws Exception {
+        HiveConfig config = new HiveConfig("com.example.app", "modular", "src/main/java", "src/test/java");
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, "ticketing", "OrganizerId", "UUID", false);
+        scaffolder.createIdentifier(tempDir, config, "ticketing", "EventId", "UUID", false);
+        scaffolder.createUseCase(tempDir, config, "ticketing", "CancelEvent", false, true,
+                List.of("organizerId:OrganizerId", "eventId:EventId"));
+
+        Path moduleRoot = tempDir.resolve("src/main/java/com/example/app/modules/ticketing");
+        Path useCase = moduleRoot.resolve("application/ports/in/CancelEventUseCase.java");
+        Path service = moduleRoot.resolve("application/services/CancelEventService.java");
+        String source = Files.readString(useCase);
+        assertTrue(source.contains("package com.example.app.modules.ticketing.application.ports.in;"));
+        assertTrue(source.contains("public final class CancelEventCommand implements Command"));
+        assertTrue(source.contains("public static final class Factory extends AbstractCommandFactory<CancelEventCommand>"));
+        assertTrue(Files.notExists(moduleRoot.resolve("application/ports/in/commands/CancelEventCommand.java")));
+        assertTrue(Files.notExists(moduleRoot.resolve("application/ports/in/commands/CancelEventCommandFactory.java")));
+        assertFilesCompile(List.of(
+                moduleRoot.resolve("domain/valueobjects/OrganizerId.java"),
+                moduleRoot.resolve("domain/valueobjects/EventId.java"),
+                useCase,
+                service
+        ));
+    }
+
+    @Test
+    void createUseCaseWithNestedCommandHonorsForce() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+        scaffolder.createUseCase(tempDir, config, null, "CancelEvent", false, true,
+                List.of("eventId:String"));
+
+        assertThrows(java.io.IOException.class,
+                () -> scaffolder.createUseCase(tempDir, config, null, "CancelEvent", false, true,
+                        List.of("eventId:String")));
+
+        scaffolder.createUseCase(tempDir, config, null, "CancelEvent", true, true,
+                List.of("eventId:String"));
+        assertTrue(Files.exists(tempDir.resolve(
+                "src/main/java/com/example/app/application/ports/in/CancelEventUseCase.java")));
+    }
+
+    @Test
+    void createCommandGeneratesImmutableClassWithNestedFactory() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createCommand(tempDir, config, null, "CreateEvent",
+                List.of("organizerId:String", "venue:String", "schedule:String"), false);
+
+        Path command = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CreateEventCommand.java");
+        String source = Files.readString(command);
+        assertCommandClassShape(source, "CreateEventCommand");
+        assertTrue(source.contains("private final String organizerId;"));
+        assertTrue(source.contains("private final String venue;"));
+        assertTrue(source.contains("private final String schedule;"));
+        assertTrue(source.contains("private CreateEventCommand(String organizerId, String venue, String schedule)"));
+        assertTrue(source.contains("return validate(new CreateEventCommand(organizerId, venue, schedule));"));
+        assertTrue(source.contains("public String organizerId()"));
+        assertTrue(source.contains("public String venue()"));
+        assertTrue(source.contains("public String schedule()"));
+        assertFalse(source.contains("setOrganizerId"));
+        assertPomContains("hive-validator");
+        assertFilesCompile(List.of(command));
+    }
+
+    @Test
+    void createCommandSupportsZeroSingleAndMultiFieldCommands() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createCommand(tempDir, config, null, "RefreshCache", List.of(), false);
+        scaffolder.createCommand(tempDir, config, null, "RenameOrder", List.of("name:String"), false);
+        scaffolder.createCommand(tempDir, config, null, "CreateEvent",
+                List.of("organizerId:String", "venue:String", "schedule:String"), false);
+
+        Path zero = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/RefreshCacheCommand.java");
+        Path single = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/RenameOrderCommand.java");
+        Path multi = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CreateEventCommand.java");
+        assertTrue(Files.readString(zero).contains("private RefreshCacheCommand()"));
+        assertTrue(Files.readString(zero).contains("public RefreshCacheCommand create()"));
+        assertFalse(Files.readString(zero).contains("return refreshCache"));
+        assertTrue(Files.readString(single).contains("private final String name;"));
+        assertTrue(Files.readString(single).contains("public String name()"));
+        assertTrue(Files.readString(multi).contains("private final String schedule;"));
+        assertFilesCompile(List.of(zero, single, multi));
     }
 
     @Test
@@ -157,6 +280,107 @@ class FileScaffolderTest {
         assertTrue(Files.readString(adapter).contains("implements SaveUserPort"));
         assertTrue(Files.readString(adapter).contains("TODO"));
         assertFilesCompile(List.of(port, adapter));
+    }
+
+    @Test
+    void createAdapterWithoutGroupPreservesLegacyOutboundPackage() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createPort(tempDir, config, null, "Payment", false);
+        scaffolder.createAdapter(tempDir, config, null, "Payment", List.of("Payment"), false);
+
+        Path adapter = tempDir.resolve("src/main/java/com/example/app/infrastructure/adapters/out/PaymentAdapter.java");
+        assertTrue(Files.exists(adapter));
+        assertTrue(Files.readString(adapter).contains("package com.example.app.infrastructure.adapters.out;"));
+    }
+
+    @Test
+    void createAdapterWithGroupUsesOutboundSubpackage() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createPort(tempDir, config, null, "Payment", false);
+        scaffolder.createAdapter(tempDir, config, null, "Payment", List.of("Payment"), "payment", false);
+
+        Path adapter = tempDir.resolve("src/main/java/com/example/app/infrastructure/adapters/out/payment/PaymentAdapter.java");
+        assertTrue(Files.exists(adapter));
+        assertTrue(Files.readString(adapter).contains("package com.example.app.infrastructure.adapters.out.payment;"));
+    }
+
+    @Test
+    void createAdapterWithModuleAndGroupUsesModuleOutboundSubpackage() throws Exception {
+        HiveConfig config = new HiveConfig("com.example.app", "modular", "src/main/java", "src/test/java");
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createPort(tempDir, config, "ticketing", "Payment", false);
+        scaffolder.createAdapter(tempDir, config, "ticketing", "Payment", List.of("Payment"), "payment", false);
+
+        Path adapter = tempDir.resolve(
+                "src/main/java/com/example/app/modules/ticketing/infrastructure/adapters/out/payment/PaymentAdapter.java");
+        assertTrue(Files.exists(adapter));
+        assertTrue(Files.readString(adapter).contains(
+                "package com.example.app.modules.ticketing.infrastructure.adapters.out.payment;"));
+    }
+
+    @Test
+    void createAdapterWithGroupKeepsMultiplePortsOnSingleAdapter() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+
+        scaffolder.createIdentifier(tempDir, config, null, "OrderId", "UUID", false);
+        scaffolder.createAggregate(tempDir, config, null, "Order", "OrderId", List.of(), false);
+        scaffolder.createPort(tempDir, config, null, "LoadOrder",
+                List.of("Optional<Order> load(OrderId id)"), false);
+        scaffolder.createPort(tempDir, config, null, "SaveOrder",
+                List.of("void save(Order order)"), false);
+        scaffolder.createAdapter(tempDir, config, null, "OrderPersistence",
+                List.of("LoadOrder", "SaveOrder"), "persistence", false);
+
+        Path orderId = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
+        Path order = tempDir.resolve("src/main/java/com/example/app/domain/aggregates/Order.java");
+        Path loadPort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/LoadOrderPort.java");
+        Path savePort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/SaveOrderPort.java");
+        Path adapter = tempDir.resolve(
+                "src/main/java/com/example/app/infrastructure/adapters/out/persistence/OrderPersistenceAdapter.java");
+        String source = Files.readString(adapter);
+        assertTrue(source.contains("implements LoadOrderPort, SaveOrderPort"));
+        assertTrue(source.contains("public Optional<Order> load(OrderId id)"));
+        assertTrue(source.contains("public void save(Order order)"));
+        assertFilesCompile(List.of(orderId, order, loadPort, savePort, adapter));
+    }
+
+    @Test
+    void createAdapterRejectsInvalidGroupSegments() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+        scaffolder.createPort(tempDir, config, null, "Payment", false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> scaffolder.createAdapter(tempDir, config, null, "Payment",
+                        List.of("Payment"), "../payment", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> scaffolder.createAdapter(tempDir, config, null, "Payment",
+                        List.of("Payment"), "payment.persistence", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> scaffolder.createAdapter(tempDir, config, null, "Payment",
+                        List.of("Payment"), "class", false));
+    }
+
+    @Test
+    void createAdapterWithGroupHonorsForce() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+        scaffolder.createPort(tempDir, config, null, "Payment", false);
+        scaffolder.createAdapter(tempDir, config, null, "Payment", List.of("Payment"), "payment", false);
+
+        assertThrows(java.io.IOException.class,
+                () -> scaffolder.createAdapter(tempDir, config, null, "Payment",
+                        List.of("Payment"), "payment", false));
+
+        scaffolder.createAdapter(tempDir, config, null, "Payment", List.of("Payment"), "payment", true);
+        assertTrue(Files.exists(tempDir.resolve(
+                "src/main/java/com/example/app/infrastructure/adapters/out/payment/PaymentAdapter.java")));
     }
 
     @Test
@@ -356,18 +580,19 @@ class FileScaffolderTest {
 
         Path orderId = tempDir.resolve("src/main/java/com/example/app/domain/valueobjects/OrderId.java");
         Path order = tempDir.resolve("src/main/java/com/example/app/domain/aggregates/Order.java");
-        Path useCaseCommand = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CreateOrderCommand.java");
+        Path useCase = tempDir.resolve("src/main/java/com/example/app/application/ports/in/CreateOrderUseCase.java");
+        Path service = tempDir.resolve("src/main/java/com/example/app/application/services/CreateOrderService.java");
         Path command = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CancelOrderCommand.java");
         Path loadPort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/LoadOrderPort.java");
         Path savePort = tempDir.resolve("src/main/java/com/example/app/application/ports/out/SaveOrderPort.java");
         Path adapter = tempDir.resolve("src/main/java/com/example/app/infrastructure/adapters/out/OrderPersistenceAdapter.java");
-        assertTrue(Files.readString(useCaseCommand).contains("List<String> tags"));
+        assertTrue(Files.readString(useCase).contains("List<String> tags"));
         assertTrue(Files.readString(command).contains("implements Command"));
         assertTrue(Files.readString(loadPort).contains("Optional<Order> load(OrderId id);"));
         assertTrue(Files.readString(adapter).contains("implements LoadOrderPort, SaveOrderPort"));
         assertTrue(Files.readString(adapter).contains("public Optional<Order> load(OrderId id)"));
         assertTrue(Files.readString(adapter).contains("public void save(Order order)"));
-        assertFilesCompile(List.of(orderId, order, useCaseCommand, command, loadPort, savePort, adapter));
+        assertFilesCompile(List.of(orderId, order, useCase, service, command, loadPort, savePort, adapter));
     }
 
     @Test
@@ -412,6 +637,38 @@ class FileScaffolderTest {
         assertFilesCompile(List.of(orderId, order, port, adapter));
     }
 
+    @Test
+    void blueprintCommandGenerationUsesImmutableCommandRenderer() throws Exception {
+        HiveConfig config = HiveConfig.defaults();
+        scaffolder.init(tempDir, config, false, false);
+        Path model = tempDir.resolve(".hive/model/create-event.yml");
+        Files.createDirectories(model.getParent());
+        Files.writeString(model, """
+                version: 1
+
+                types:
+                  - kind: command
+                    name: CreateEvent
+                    fields:
+                      - name: organizerId
+                        type: String
+                      - name: venue
+                        type: String
+                      - name: schedule
+                        type: String
+                """);
+
+        List<Path> created = new BlueprintGenerator().generateAll(tempDir, config, false);
+
+        Path command = tempDir.resolve("src/main/java/com/example/app/application/ports/in/commands/CreateEventCommand.java");
+        String source = Files.readString(command);
+        assertEquals(1, created.size());
+        assertCommandClassShape(source, "CreateEventCommand");
+        assertTrue(source.contains("private final String organizerId;"));
+        assertTrue(source.contains("return validate(new CreateEventCommand(organizerId, venue, schedule));"));
+        assertFilesCompile(List.of(command));
+    }
+
     private void assertFilesCompile(List<Path> sourceFiles) throws Exception {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         Path output = tempDir.resolve("compiled");
@@ -442,6 +699,16 @@ class FileScaffolderTest {
                 Files.readString(tempDir.resolve("pom.xml")).contains("<artifactId>" + artifactId + "</artifactId>"),
                 "Missing Maven dependency " + artifactId
         );
+    }
+
+    private void assertCommandClassShape(String source, String typeName) {
+        assertTrue(source.contains("public final class " + typeName + " implements Command"));
+        assertFalse(source.contains("record " + typeName));
+        assertTrue(source.contains("private " + typeName + "("));
+        assertTrue(source.contains("public static final class Factory extends AbstractCommandFactory<" + typeName + ">"));
+        assertTrue(source.contains("public " + typeName + " create("));
+        assertTrue(source.contains("return validate(new " + typeName + "("));
+        assertFalse(source.contains(" set"));
     }
 
     private int occurrences(String text, String value) {

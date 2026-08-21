@@ -303,30 +303,26 @@ hive create usecase CreateUser
 With the default config, this creates:
 
 ```text
-src/main/java/com/example/app/application/ports/in/commands/CreateUserCommand.java
 src/main/java/com/example/app/application/ports/in/CreateUserUseCase.java
 src/main/java/com/example/app/application/services/CreateUserService.java
 ```
 
-With `--factory`, it also creates:
+The command also ensures `pom.xml` contains `hive-core` and `hive-validator`.
 
-```text
-src/main/java/com/example/app/application/ports/in/commands/CreateUserCommandFactory.java
-```
-
-The command also ensures `pom.xml` contains `hive-core`. When `--factory` is used, it adds `hive-validator` as well.
-
-Generated command:
+Generated input port with nested command:
 
 ```java
-public record CreateUserCommand() implements Command {
-}
-```
+public interface CreateUserUseCase extends UseCase<CreateUserUseCase.CreateUserCommand, Result> {
+    public final class CreateUserCommand implements Command {
+        private CreateUserCommand() {
+        }
 
-Generated input port:
-
-```java
-public interface CreateUserUseCase extends UseCase<CreateUserCommand, Result> {
+        public static final class Factory extends AbstractCommandFactory<CreateUserCommand> {
+            public CreateUserCommand create() {
+                return validate(new CreateUserCommand());
+            }
+        }
+    }
 }
 ```
 
@@ -335,7 +331,7 @@ Generated service:
 ```java
 public final class CreateUserService implements CreateUserUseCase {
     @Override
-    public Result handle(CreateUserCommand input) {
+    public Result handle(CreateUserUseCase.CreateUserCommand input) {
         return new CreateUserResult();
     }
 
@@ -344,15 +340,7 @@ public final class CreateUserService implements CreateUserUseCase {
 }
 ```
 
-Generated factory:
-
-```java
-public final class CreateUserCommandFactory extends AbstractCommandFactory<CreateUserCommand> {
-    public CreateUserCommand create() {
-        return validate(new CreateUserCommand());
-    }
-}
-```
+`CreateUserCommand` is an immutable final class with a private constructor, nested `Factory`, and record-style accessors for any fields. The nested Factory is the supported construction path, so application command validation cannot be bypassed by direct construction. Standalone commands created with `hive create command` continue to be generated as separate files under `application/ports/in/commands`, using the same immutable class shape.
 
 The generated factory uses `hive-validator`; the CLI adds this dependency when it is missing:
 
@@ -420,6 +408,7 @@ Generates an outbound adapter under `infrastructure.adapters.out` implementing a
 
 ```bash
 hive create adapter InMemorySaveUser --port SaveUser
+hive create adapter OrderPersistence --group persistence --port LoadOrderPort --port SaveOrderPort
 ```
 
 With the default config, this creates:
@@ -434,6 +423,8 @@ public final class InMemorySaveUserAdapter implements SaveUserPort {
 ```
 
 The `Adapter` suffix is added automatically when missing. A leading module name and `--force` are supported.
+
+Use `--group <group>` to place outbound adapters under a cohesive subpackage such as `infrastructure.adapters.out.persistence`, `infrastructure.adapters.out.payment`, or another project-specific integration concern. Without `--group`, adapters are generated directly under `infrastructure.adapters.out`.
 
 Adapters can implement multiple output ports by repeating `--port`:
 
@@ -756,13 +747,13 @@ Setters are never generated unless `--setters` is passed. No Lombok dependency i
 
 ### hive create command
 
-Generates an application command record under `application.ports.in.commands`.
+Generates an immutable application command class under `application.ports.in.commands`.
 
 ```bash
 hive create command CreateOrder --field customerId:CustomerId
 ```
 
-The `Command` suffix is added automatically when missing, and the generated record implements `io.sinapsi.hive.core.command.Command`.
+The `Command` suffix is added automatically when missing. The generated class is `final`, implements `io.sinapsi.hive.core.command.Command`, stores properties in `private final` fields, has a private constructor, exposes record-style accessors, and includes a nested `Factory` that extends `AbstractCommandFactory`.
 
 ### hive create module
 
@@ -817,18 +808,11 @@ hive create usecase customer RegisterCustomer
 With the default config, this creates:
 
 ```text
-src/main/java/com/example/app/modules/customer/application/ports/in/commands/RegisterCustomerCommand.java
 src/main/java/com/example/app/modules/customer/application/ports/in/RegisterCustomerUseCase.java
 src/main/java/com/example/app/modules/customer/application/services/RegisterCustomerService.java
 ```
 
-With `--factory`, it also creates:
-
-```text
-src/main/java/com/example/app/modules/customer/application/ports/in/commands/RegisterCustomerCommandFactory.java
-```
-
-As with single-context use cases, `hive-core` is ensured and `hive-validator` is added when `--factory` is used.
+As with single-context use cases, `RegisterCustomerCommand` is nested inside `RegisterCustomerUseCase`; `--factory` nests `RegisterCustomerCommand.Factory` there too, ensures `hive-core`, and adds `hive-validator`.
 
 Use `--force` to overwrite existing generated files:
 
@@ -932,6 +916,37 @@ Options:
 ```
 
 Blueprint generation keeps the existing overwrite rule: existing files are protected unless `--force` is passed.
+
+### hive blueprint schema
+
+Prints the blueprint contract supported by the installed CLI version. Use the JSON form for tools and agents instead of duplicating blueprint syntax in external documentation.
+
+```bash
+hive blueprint schema
+hive blueprint schema --json
+hive blueprint schema --kind aggregate --json
+```
+
+The schema output includes the HIVE version, schema version, blueprint version, supported kinds, aliases, required and optional properties, nested field/method shapes, scalar value-object types, and supported constraint names.
+
+### hive blueprint validate
+
+Validates a blueprint file without generating Java source files.
+
+```bash
+hive blueprint validate .hive/model/order.yml
+hive blueprint validate .hive/model/order.yml --json
+```
+
+Invalid blueprints return a non-zero exit code. JSON output is machine-readable and includes `valid`, `file`, and diagnostic `errors` with stable codes, paths, messages, and kind/name details where available.
+
+The installed HIVE CLI is the authoritative source for the blueprint format supported by that version. A tool-driven workflow should be:
+
+```bash
+hive blueprint schema --json
+hive blueprint validate .hive/model/order.yml --json
+hive generate .hive/model/order.yml --json
+```
 
 ### hive inspect
 

@@ -23,7 +23,8 @@ import picocli.CommandLine.Command;
                 CreateSnapshotCommand.class,
                 CreateRecordCommand.class,
                 CreatePlainClassCommand.class,
-                CreateApplicationCommandCommand.class
+                CreateApplicationCommandCommand.class,
+                CreateInboundCommand.class
         }
 )
 public final class CreateCommand implements Runnable {

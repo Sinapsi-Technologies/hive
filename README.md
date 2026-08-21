@@ -83,6 +83,7 @@ hive create entity User --id UserId --field email:Email
 hive create usecase CreateUser --factory
 hive create port SaveUser
 hive create adapter InMemorySaveUser --port SaveUser
+hive create adapter Payment --group payment --port PaymentPort
 hive create archtest
 hive check
 ```
@@ -111,7 +112,6 @@ hive create usecase CreateUser --json
   "command": "create usecase",
   "name": "CreateUser",
   "created": [
-    "src/main/java/com/example/app/application/ports/in/commands/CreateUserCommand.java",
     "src/main/java/com/example/app/application/ports/in/CreateUserUseCase.java",
     "src/main/java/com/example/app/application/services/CreateUserService.java"
   ]
@@ -148,15 +148,20 @@ hive create class CustomerDto --field name:String --field email:String --getters
 hive create command CreateOrder --field customerId:CustomerId
 hive create port LoadOrder --method "Optional<Order> load(OrderId id)"
 hive create adapter OrderPersistence --port LoadOrderPort --port SaveOrderPort
+hive create adapter Payment --group payment --port ChargePaymentPort --port RefundPaymentPort
 ```
 
 Blueprint files can batch the same generators:
 
 ```bash
+hive blueprint schema --json
+hive blueprint validate .hive/model/order.yml --json
 hive generate .hive/model/order.yml
 hive generate --all
 hive inspect config --json
 ```
+
+The installed HIVE CLI is the authoritative source for the blueprint format supported by that version. External agents and IDE integrations should call `hive blueprint schema --json` to discover supported kinds, fields, constraints, and aliases, then run `hive blueprint validate <file.yml> --json` before `hive generate`.
 
 ---
 
@@ -314,12 +319,34 @@ Use them for tests, demos, and small apps; replace them with project-specific in
 4. the use case receives a valid command.
 
 ```java
-public final class CreateUserCommandFactory extends AbstractCommandFactory<CreateUserCommand> {
-    public CreateUserCommand create(String name, String email) {
-        return validate(new CreateUserCommand(name, email));
+public interface CreateUserUseCase extends UseCase<CreateUserUseCase.CreateUserCommand, Result> {
+    public final class CreateUserCommand implements Command {
+        private final String name;
+        private final String email;
+
+        private CreateUserCommand(String name, String email) {
+            this.name = name;
+            this.email = email;
+        }
+
+        public static final class Factory extends AbstractCommandFactory<CreateUserCommand> {
+            public CreateUserCommand create(String name, String email) {
+                return validate(new CreateUserCommand(name, email));
+            }
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String email() {
+            return email;
+        }
     }
 }
 ```
+
+Generated Commands are immutable final classes with private final properties, a private constructor, a nested Factory, and record-style accessors. For commands generated with a UseCase, the standard Java representation is nested: `CreateUserUseCase.CreateUserCommand.Factory` creates and validates `CreateUserUseCase.CreateUserCommand`. Explicit `hive create command ...` artifacts remain standalone but use the same Command class shape.
 
 `AbstractCommandFactory` validates through `ValidationProviders.get().commandValidator()`. With no provider on the classpath it uses a no-op validator. Add `jakarta-hive-validator` (discovered via Java SPI) for Jakarta Bean Validation — keep using `AbstractCommandFactory`; don't instantiate the provider directly.
 
@@ -363,7 +390,7 @@ hive check [--json]
 hive create usecase <Name> [--factory] [--force] [--json]
 hive create usecase <module> <Name> [--factory] [--force] [--json]
 hive create port <Name> [--force] [--json]
-hive create adapter <Name> --port <Port> [--force] [--json]
+hive create adapter <Name> --port <Port> [--port <Port>] [--group <group>] [--force] [--json]
 hive create vo <Name> [--type <Type>] [--not-null] [--not-blank] [--min <n>] [--max <n>] [--min-length <n>] [--max-length <n>] [--pattern <regex>] [--force] [--json]
 hive create id <Name> [--type UUID|Long|String] [--force] [--json]
 hive create entity <Name> --id <IdType> [--field name:Type]... [--force] [--json]
@@ -378,6 +405,8 @@ hive create class <Name> [--field name:Type]... [--getters] [--setters] [--const
 hive create command <Name> [--field name:Type]... [--force] [--json]
 hive create module <name> [--json]
 hive create archtest [--force] [--json]
+hive blueprint schema [--kind <kind>] [--json]
+hive blueprint validate <file> [--json]
 hive generate <file> [--force] [--json]
 hive generate --all [--force] [--json]
 hive inspect config|model|generated [--json]

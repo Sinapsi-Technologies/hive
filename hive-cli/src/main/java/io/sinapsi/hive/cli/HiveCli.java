@@ -1,6 +1,7 @@
 package io.sinapsi.hive.cli;
 
 import io.sinapsi.hive.cli.command.C4Command;
+import io.sinapsi.hive.cli.command.BlueprintCommand;
 import io.sinapsi.hive.cli.command.CheckCommand;
 import io.sinapsi.hive.cli.command.CreateCommand;
 import io.sinapsi.hive.cli.command.GenerateCommand;
@@ -18,6 +19,7 @@ import picocli.CommandLine.Command;
                 CheckCommand.class,
                 GenerateCommand.class,
                 InspectCommand.class,
+                BlueprintCommand.class,
                 C4Command.class
         }
 )

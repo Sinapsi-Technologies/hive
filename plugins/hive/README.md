@@ -9,7 +9,7 @@ The plugin pairs the **deterministic CLI** (structure, repeatable code generatio
 - **`/hive:new [basePackage]`** - slash command. Bootstraps a new project: resolves the CLI, runs `hive init --readme --json`, scaffolds a starter slice, and verifies.
 - **`hive` skill** - top-level workflow for Hive projects. Maps user requests to the real CLI surface and keeps the deterministic CLI / Claude logic split clear.
 - **`hive-cli-project` skill** - `hive init`, `hive check`, `hive inspect`, `hive create archtest`, and project verification.
-- **`hive-cli-codegen` skill** - `hive create ...` and `hive generate ...` for use cases, commands, ports, adapters, modules, domain primitives, records, classes, and blueprints.
+- **`hive-cli-codegen` skill** - `hive create ...` and `hive generate ...` for use cases, commands, ports, outbound adapters, inbound REST/MCP/listener/scheduler adapters, modules, domain primitives, records, classes, and blueprints.
 - **`hive-cli-c4` skill** - `hive c4 generate`, PlantUML rendering, architecture site output, and C4 troubleshooting.
 
 ## Install
@@ -42,11 +42,15 @@ hive init
 hive check
 hive inspect config|model|generated
 hive create usecase|command|port|adapter|module|archtest
+hive create inbound rest|mcp|listener|scheduler
 hive create vo|id|entity|aggregate|enum|event|exception|domainservice|snapshot
 hive create record|class
+hive blueprint schema
+hive blueprint validate <file.yml>
 hive generate <file.yml>
 hive generate --all
 hive c4 generate
 ```
 
 Use `hive create vo` for value objects.
+Use `hive blueprint schema --json` as the authoritative blueprint contract for the installed CLI version instead of copying blueprint syntax into agents or docs.

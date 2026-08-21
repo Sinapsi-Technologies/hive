@@ -60,36 +60,21 @@ public final class FileScaffolder {
         String base = applicationPackage(config, moduleName);
         Path baseDir = names.packageDirectory(config.javaSourceRoot(projectRoot), base);
 
-        String commandPackage = base + ".ports.in.commands";
         String inputPortPackage = base + ".ports.in";
         String servicePackage = base + ".services";
 
         List<Path> created = new ArrayList<>();
         created.add(write(
-                baseDir.resolve("ports/in/commands").resolve(typeName + "Command.java"),
-                commandTemplate(contextRootPackage(config, moduleName), commandPackage, typeName, fields),
-                force
-        ));
-        created.add(write(
                 baseDir.resolve("ports/in").resolve(typeName + "UseCase.java"),
-                useCasePortTemplate(inputPortPackage, commandPackage, typeName),
+                useCasePortTemplate(contextRootPackage(config, moduleName), inputPortPackage, typeName, fields),
                 force
         ));
         created.add(write(
                 baseDir.resolve("services").resolve(typeName + "Service.java"),
-                serviceTemplate(servicePackage, commandPackage, inputPortPackage, typeName),
+                serviceTemplate(servicePackage, inputPortPackage, typeName),
                 force
         ));
-        if (factory) {
-            created.add(write(
-                    baseDir.resolve("ports/in/commands").resolve(typeName + "CommandFactory.java"),
-                    commandFactoryTemplate(contextRootPackage(config, moduleName), commandPackage, typeName, fields),
-                    force
-            ));
-            pomUpdater.ensureValidatorDependency(projectRoot, config);
-        } else {
-            pomUpdater.ensureBasePom(projectRoot, config);
-        }
+        pomUpdater.ensureValidatorDependency(projectRoot, config);
         return created;
     }
 
@@ -166,7 +151,7 @@ public final class FileScaffolder {
             String portName,
             boolean force
     ) throws IOException {
-        return createAdapter(projectRoot, config, moduleName, adapterName, List.of(portName), force);
+        return createAdapter(projectRoot, config, moduleName, adapterName, List.of(portName), null, force);
     }
 
     public List<Path> createAdapter(
@@ -177,23 +162,43 @@ public final class FileScaffolder {
             List<String> portNames,
             boolean force
     ) throws IOException {
+        return createAdapter(projectRoot, config, moduleName, adapterName, portNames, null, force);
+    }
+
+    public List<Path> createAdapter(
+            Path projectRoot,
+            HiveConfig config,
+            String moduleName,
+            String adapterName,
+            List<String> portNames,
+            String group,
+            boolean force
+    ) throws IOException {
         if (portNames == null || portNames.isEmpty()) {
             throw new IllegalArgumentException("At least one --port is required");
         }
+        String adapterGroup = group == null || group.isBlank()
+                ? null
+                : names.requirePackageSegment("adapter group", group);
         String adapterType = withSuffix(names.requireJavaTypeName(adapterName), "Adapter");
         List<String> portTypes = portNames.stream()
                 .map(name -> withSuffix(names.requireJavaTypeName(name), "Port"))
                 .toList();
         String contextRoot = contextRootPackage(config, moduleName);
-        String adapterPackage = contextRoot + ".infrastructure.adapters.out";
+        String adapterRelativePackage = "infrastructure.adapters.out" + (adapterGroup == null ? "" : "." + adapterGroup);
+        String adapterPackage = contextRoot + "." + adapterRelativePackage;
         String portPackage = contextRoot + ".application.ports.out";
         Path contextDir = names.packageDirectory(config.javaSourceRoot(projectRoot), contextRoot);
         List<MethodSpec> methods = adapterMethods(projectRoot, config, contextDir, portTypes);
+        Path adapterDir = contextDir.resolve("infrastructure/adapters/out");
+        if (adapterGroup != null) {
+            adapterDir = adapterDir.resolve(names.packagePath(adapterGroup));
+        }
 
         List<Path> created = new ArrayList<>();
         created.add(write(
-                contextDir.resolve("infrastructure/adapters/out").resolve(adapterType + ".java"),
-                outboundAdapterTemplate(contextRoot, adapterPackage, portPackage, adapterType, portTypes, methods),
+                adapterDir.resolve(adapterType + ".java"),
+                outboundAdapterTemplate(contextRoot, adapterRelativePackage, adapterPackage, portPackage, adapterType, portTypes, methods),
                 force
         ));
         pomUpdater.ensureBasePom(projectRoot, config);
@@ -447,10 +452,10 @@ public final class FileScaffolder {
         List<Path> created = new ArrayList<>();
         created.add(write(
                 commandDir.resolve(typeName + ".java"),
-                commandRecordTemplate(contextRootPackage(config, moduleName), commandPackage, typeName, fields),
+                commandClassTemplate(contextRootPackage(config, moduleName), commandPackage, typeName, fields),
                 force
         ));
-        pomUpdater.ensureBasePom(projectRoot, config);
+        pomUpdater.ensureValidatorDependency(projectRoot, config);
         return created;
     }
 
@@ -550,39 +555,75 @@ public final class FileScaffolder {
         return path;
     }
 
-    private String commandTemplate(String contextRoot, String packageName, String typeName, List<FieldSpec> fields) {
-        if (fields.isEmpty()) {
-            return """
-                    package %s;
-
-                    import io.sinapsi.hive.core.command.Command;
-
-                    public record %sCommand() implements Command {
-                        // TODO: add the fields this command carries
-                    }
-                    """.formatted(packageName, typeName);
-        }
-        return commandRecordTemplate(contextRoot, packageName, typeName + "Command", fields);
-    }
-
-    private String commandRecordTemplate(String contextRoot, String packageName, String typeName, List<FieldSpec> fields) {
+    private String commandClassTemplate(String contextRoot, String packageName, String typeName, List<FieldSpec> fields) {
         return """
                 package %s;
 
                 %s
                 import io.sinapsi.hive.core.command.Command;
+                import io.sinapsi.hive.factory.AbstractCommandFactory;
 
-                public record %s(%s) implements Command {
-                }
+                %s
                 """.formatted(
                 packageName,
                 importsForFields(contextRoot, "application.ports.in.commands", fields),
-                typeName,
-                recordParametersMultiline(fields)
+                commandClassBody(typeName, fields, "")
         );
     }
 
-    private String commandFactoryTemplate(String contextRoot, String packageName, String typeName, List<FieldSpec> fields) {
+    private String commandClassBody(String typeName, List<FieldSpec> fields, String indent) {
+        return indent + "public final class " + typeName + " implements Command {\n"
+                + commandFieldDeclarations(fields, indent + "    ")
+                + commandConstructor(typeName, fields, indent + "    ")
+                + commandFactory(typeName, fields, indent + "    ")
+                + commandAccessors(fields, indent + "    ")
+                + indent + "}\n";
+    }
+
+    private String commandFieldDeclarations(List<FieldSpec> fields, String indent) {
+        if (fields.isEmpty()) {
+            return "";
+        }
+        StringBuilder lines = new StringBuilder();
+        for (FieldSpec field : fields) {
+            lines.append(indent)
+                    .append("private final ")
+                    .append(field.type())
+                    .append(" ")
+                    .append(field.name())
+                    .append(";\n");
+        }
+        return lines.append("\n").toString();
+    }
+
+    private String commandConstructor(String typeName, List<FieldSpec> fields, String indent) {
+        return """
+                %sprivate %s(%s) {
+                %s%s}
+
+                """.formatted(
+                indent,
+                typeName,
+                recordParametersSingleLine(fields),
+                commandConstructorAssignments(fields, indent + "    "),
+                indent
+        );
+    }
+
+    private String commandConstructorAssignments(List<FieldSpec> fields, String indent) {
+        StringBuilder lines = new StringBuilder();
+        for (FieldSpec field : fields) {
+            lines.append(indent)
+                    .append("this.")
+                    .append(field.name())
+                    .append(" = ")
+                    .append(field.name())
+                    .append(";\n");
+        }
+        return lines.toString();
+    }
+
+    private String commandFactory(String typeName, List<FieldSpec> fields, String indent) {
         String parameters = fields.stream()
                 .map(field -> field.type() + " " + field.name())
                 .reduce((left, right) -> left + ", " + right)
@@ -592,52 +633,83 @@ public final class FileScaffolder {
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("");
         return """
-                package %s;
+                %spublic static final class Factory extends AbstractCommandFactory<%s> {
+                %s    public %s create(%s) {
+                %s        return validate(new %s(%s));
+                %s    }
+                %s}
 
-                %s
-                import io.sinapsi.hive.factory.AbstractCommandFactory;
-
-                public final class %sCommandFactory extends AbstractCommandFactory<%sCommand> {
-                    public %sCommand create(%s) {
-                        return validate(new %sCommand(%s));
-                    }
-                }
                 """.formatted(
-                packageName,
-                importsForFields(contextRoot, "application.ports.in.commands", fields),
+                indent,
                 typeName,
-                typeName,
+                indent,
                 typeName,
                 parameters,
+                indent,
                 typeName,
-                arguments
+                arguments,
+                indent,
+                indent
         );
     }
 
-    private String useCasePortTemplate(String packageName, String commandPackage, String typeName) {
-        return """
-                package %s;
-
-                import %s.%sCommand;
-                import io.sinapsi.hive.core.result.Result;
-                import io.sinapsi.hive.core.usecase.UseCase;
-
-                public interface %sUseCase extends UseCase<%sCommand, Result> {
-                }
-                """.formatted(packageName, commandPackage, typeName, typeName, typeName);
+    private String commandAccessors(List<FieldSpec> fields, String indent) {
+        StringBuilder lines = new StringBuilder();
+        for (FieldSpec field : fields) {
+            lines.append(indent)
+                    .append("public ")
+                    .append(field.type())
+                    .append(" ")
+                    .append(field.name())
+                    .append("() {\n");
+            lines.append(indent)
+                    .append("    return ")
+                    .append(field.name())
+                    .append(";\n");
+            lines.append(indent)
+                    .append("}\n\n");
+        }
+        return lines.toString();
     }
 
-    private String serviceTemplate(String packageName, String commandPackage, String inputPortPackage, String typeName) {
+    private String useCasePortTemplate(
+            String contextRoot,
+            String packageName,
+            String typeName,
+            List<FieldSpec> fields
+    ) {
         return """
                 package %s;
 
-                import %s.%sCommand;
+                %s
+                import io.sinapsi.hive.core.command.Command;
+                import io.sinapsi.hive.core.result.Result;
+                import io.sinapsi.hive.core.usecase.UseCase;
+                import io.sinapsi.hive.factory.AbstractCommandFactory;
+
+                public interface %sUseCase extends UseCase<%sUseCase.%sCommand, Result> {
+                %s
+                }
+                """.formatted(
+                packageName,
+                importsForFields(contextRoot, "application.ports.in", fields),
+                typeName,
+                typeName,
+                typeName,
+                commandClassBody(typeName + "Command", fields, "    ")
+        );
+    }
+
+    private String serviceTemplate(String packageName, String inputPortPackage, String typeName) {
+        return """
+                package %s;
+
                 import %s.%sUseCase;
                 import io.sinapsi.hive.core.result.Result;
 
                 public final class %sService implements %sUseCase {
                     @Override
-                    public Result handle(%sCommand input) {
+                    public Result handle(%sUseCase.%sCommand input) {
                         // TODO: implement the use case logic
                         return new %sResult();
                     }
@@ -648,9 +720,8 @@ public final class FileScaffolder {
                 }
                 """.formatted(
                 packageName,
-                commandPackage,
-                typeName,
                 inputPortPackage,
+                typeName,
                 typeName,
                 typeName,
                 typeName,
@@ -697,6 +768,7 @@ public final class FileScaffolder {
 
     private String outboundAdapterTemplate(
             String contextRoot,
+            String adapterRelativePackage,
             String adapterPackage,
             String portPackage,
             String adapterType,
@@ -713,7 +785,7 @@ public final class FileScaffolder {
                 }
                 """.formatted(
                 adapterPackage,
-                adapterImports(contextRoot, portPackage, portTypes, methods),
+                adapterImports(contextRoot, adapterRelativePackage, portPackage, portTypes, methods),
                 adapterType,
                 String.join(", ", portTypes),
                 adapterMethodLines(methods, portTypes)
@@ -1076,6 +1148,7 @@ public final class FileScaffolder {
 
     private String adapterImports(
             String contextRoot,
+            String adapterRelativePackage,
             String portPackage,
             List<String> portTypes,
             List<MethodSpec> methods
@@ -1084,7 +1157,7 @@ public final class FileScaffolder {
         for (String portType : portTypes) {
             imports.add(portPackage + "." + portType);
         }
-        collectMethodImports(imports, contextRoot, "infrastructure.adapters.out", methods);
+        collectMethodImports(imports, contextRoot, adapterRelativePackage, methods);
         return renderImports(imports);
     }
 

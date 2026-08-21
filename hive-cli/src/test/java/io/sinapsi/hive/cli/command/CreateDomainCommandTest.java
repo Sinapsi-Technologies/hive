@@ -29,7 +29,8 @@ class CreateDomainCommandTest {
                 "snapshot",
                 "record",
                 "class",
-                "command"
+                "command",
+                "inbound"
         ), commandLine.getSubcommands().keySet());
     }
 }

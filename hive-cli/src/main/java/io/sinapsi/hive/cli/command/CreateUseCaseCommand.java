@@ -24,7 +24,7 @@ public final class CreateUseCaseCommand implements Callable<Integer> {
     @Option(names = "--force", description = "Overwrite existing generated files.")
     boolean force;
 
-    @Option(names = "--factory", description = "Create an AbstractCommandFactory for the generated command.")
+    @Option(names = "--factory", description = "Retained for compatibility; generated commands include a nested Factory.")
     boolean factory;
 
     @Option(names = "--field", paramLabel = "name:Type", description = "Command field.")
@@ -35,7 +35,11 @@ public final class CreateUseCaseCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        Path root = new ProjectLocator().locate(Path.of("."))
+        return call(Path.of("."));
+    }
+
+    Integer call(Path start) throws Exception {
+        Path root = new ProjectLocator().locate(start)
                 .orElseThrow(() -> new IllegalStateException("No .hive-project found"));
         HiveConfig config = new HiveConfigLoader().load(root);
         String moduleName = names.size() == 2 ? names.getFirst() : null;

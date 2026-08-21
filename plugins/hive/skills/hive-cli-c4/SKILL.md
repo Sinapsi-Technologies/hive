@@ -62,6 +62,7 @@ It does not infer business semantics or draw a complete dependency graph. It dra
 
 - If rendering fails because PlantUML is missing, keep the generated `.puml` and tell the user rendering needs PlantUML configured in `hive.yml` or available on PATH.
 - If the diagram is empty, run `hive check --json` and inspect whether the expected source roots and packages exist.
+- If the project is expected to generate code from blueprint YAML before diagramming, validate those files with `hive blueprint validate <file.yml> --json`; use `hive blueprint schema --json` for the installed blueprint contract.
 - Do not move source files to make diagrams work. Fix generation or package violations through Hive conventions.
 
 ## Verify
