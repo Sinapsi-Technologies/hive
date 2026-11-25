@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hive-gof",
+  "version": "0.1.0",
+  "description": "Gang of Four design pattern identification, implementation, refactoring, and review workflows.",
+  "author": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "homepage": "https://github.com/Sinapsi-Technologies/hive",
+  "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "license": "MIT",
+  "keywords": [
+    "design-patterns",
+    "gang-of-four",
+    "software-design"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Hive GoF Patterns",
+        "shortDescription": "GoF design pattern skills",
+        "longDescription": "Identify, apply, refactor toward, and review Gang of Four design patterns without forcing unnecessary abstractions.",
+        "developerName": "Sinapsi Technologies",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": "Identify which design pattern, if any, fits this problem."
+      }
+    }
+  }
+}

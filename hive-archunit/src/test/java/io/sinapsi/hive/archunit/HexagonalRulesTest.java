@@ -37,4 +37,66 @@ class HexagonalRulesTest {
 
         assertThrows(AssertionError.class, () -> rule.check(classes));
     }
+
+    @Test
+    void infrastructureAdapterDependingOnDomainIsRejected() {
+        String base = FIXTURES + ".violations.infrastructuredep";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+        ArchRule rule = HexagonalRules.inboundAdaptersShouldNotDependOnDomain(base);
+
+        assertThrows(AssertionError.class, () -> rule.check(classes));
+    }
+
+    @Test
+    void viewInsideServicesIsRejected() {
+        String base = FIXTURES + ".violations.viewplacement";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertThrows(AssertionError.class,
+                () -> HexagonalRules.viewsShouldResideInsideInputPortViews(base).check(classes));
+    }
+
+    @Test
+    void inputPortDependingOnServiceOutputIsRejected() {
+        String base = FIXTURES + ".violations.portservicedep";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertThrows(AssertionError.class,
+                () -> HexagonalRules.inputPortsShouldNotDependOnServices(base).check(classes));
+    }
+
+    @Test
+    void contextsWithoutViewsAreAllowed() {
+        String base = FIXTURES + ".violations.domaindep";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertDoesNotThrow(() -> HexagonalRules.viewsShouldResideInsideInputPortViews(base).check(classes));
+    }
+
+    @Test
+    void applicationDependingOnSharedHiveInfrastructureIsRejected() {
+        String base = FIXTURES + ".violations.sharedinfra";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertThrows(AssertionError.class,
+                () -> HexagonalRules.applicationShouldNotDependOnInfrastructure(base).check(classes));
+    }
+
+    @Test
+    void domainDependingOnSharedHiveInfrastructureIsRejected() {
+        String base = FIXTURES + ".violations.sharedinfra";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertThrows(AssertionError.class,
+                () -> HexagonalRules.domainShouldNotDependOnInfrastructure(base).check(classes));
+    }
+
+    @Test
+    void domainWithJakartaValidationAnnotationsIsRejected() {
+        String base = FIXTURES + ".violations.domainvalidation";
+        JavaClasses classes = new ClassFileImporter().importPackages(base);
+
+        assertThrows(AssertionError.class,
+                () -> HexagonalRules.domainShouldNotDependOnFrameworks(base).check(classes));
+    }
 }

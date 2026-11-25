@@ -21,6 +21,7 @@ Hive rules expect this package shape under your application base package:
     ports
       in
         commands
+        views
       out
     services
 
@@ -48,9 +49,14 @@ Small command types may be nested near input contracts. Larger command classes m
 application.ports.in.commands
 ```
 
+`application.ports.in.views` contains plain output records named `*View`.
+Each view exposes a static `of(...)` factory with the same parameters as its record constructor.
+Use cases return `Result<MyView>`; services construct views without owning their contracts.
+Input ports and their models must not depend on `application.services`.
+
 `application.ports.out` contains output ports: interfaces that describe capabilities needed by the application layer.
 
-`infrastructure.adapters.in` contains inbound adapters, such as controllers, message listeners, CLI handlers, or schedulers.
+`infrastructure.adapters.in` contains inbound adapters, such as controllers, message listeners, command-line handlers, or schedulers.
 
 `infrastructure.adapters.out` contains outbound adapters, such as persistence, messaging, file, HTTP, or external service adapters.
 
@@ -99,6 +105,9 @@ Domain classes must not depend on:
 org.springframework..
 jakarta.persistence..
 javax.persistence..
+jakarta.validation..
+javax.validation..
+org.hibernate.validator..
 ```
 
 Intent: keep the domain model framework-free. Aggregates, entities, value objects, domain events, snapshots, and domain exceptions should not know about Spring or persistence APIs.
@@ -131,6 +140,7 @@ Domain classes must not depend on:
 
 ```text
 <base-package>.infrastructure..
+io.sinapsi.hive.infrastructure..
 ```
 
 Intent: domain code must not depend on adapters, external systems, configuration, persistence, messaging, or delivery mechanisms.
@@ -147,9 +157,13 @@ Application classes must not depend on:
 
 ```text
 <base-package>.infrastructure..
+io.sinapsi.hive.infrastructure..
 ```
 
 Intent: use cases and application services depend on ports and domain objects, not concrete infrastructure implementations.
+This includes shared Hive providers outside the application's base package.
+Jakarta validation annotations on application commands remain allowed; domain validation
+annotations and direct application dependencies on Hive's Jakarta implementations are rejected.
 
 ### applicationShouldNotDependOnInboundAdapters
 
@@ -197,7 +211,7 @@ Inbound adapters must not depend on:
 <base-package>.infrastructure.adapters.out..
 ```
 
-Intent: controllers, listeners, schedulers, and CLI handlers should invoke input ports or use cases. They should not bypass the application layer by calling persistence or external service adapters directly.
+Intent: controllers, listeners, schedulers, and command-line handlers should invoke input ports or use cases. They should not bypass the application layer by calling persistence or external service adapters directly.
 
 ### mappersShouldNotBeInDomain
 
@@ -268,6 +282,19 @@ They must reside under:
 ```
 
 Intent: use case contracts are inbound application ports. Keeping them under `application.ports.in` makes the dependency direction obvious for inbound adapters.
+
+### viewsShouldResideInsideInputPortViews
+
+Classes ending in `View` must live under `application.ports.in.views`, including within
+individual modules. Contexts without views are allowed. This naming convention is for
+application output models; transport-specific responses belong in adapters and should
+use a different suffix, such as `Response`.
+
+### inputPortsShouldNotDependOnServices
+
+Classes under `application.ports.in`, including commands and views, must not depend on
+`application.services`. Use case outputs belong to the input contract rather than its
+service implementation.
 
 ### outputPortsShouldResideInsideOutputPortsPackage
 

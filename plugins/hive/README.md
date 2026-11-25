@@ -1,56 +1,108 @@
-# Hive — Claude Code plugin
+# Hive — Codex and Claude Code plugin
 
-Drives the [Hive](https://github.com/Sinapsi-Technologies/hive) CLI from Claude Code to create and evolve hexagonal (ports & adapters) Java projects.
+Connects to the Hive MCP server to analyze, model, generate, and validate Java
+projects with hexagonal architecture. It also provides a backlog-driven feature
+workflow, five portable role skills, and matching Claude Code subagents.
 
-The plugin pairs the **deterministic CLI** (structure, repeatable code generation) with **Claude** (fills the generated `// TODO:` markers with real logic), and validates changes with Maven and the Hive ArchUnit rules.
+## MCP connection
 
-## What's inside
+The plugin declares the same local Streamable HTTP server for both hosts:
 
-- **`/hive:new [basePackage]`** - slash command. Bootstraps a new project: resolves the CLI, runs `hive init --readme --json`, scaffolds a starter slice, and verifies.
-- **`hive` skill** - top-level workflow for Hive projects. Maps user requests to the real CLI surface and keeps the deterministic CLI / Claude logic split clear.
-- **`hive-cli-project` skill** - `hive init`, `hive check`, `hive inspect`, `hive create archtest`, and project verification.
-- **`hive-cli-codegen` skill** - `hive create ...` and `hive generate ...` for use cases, commands, ports, outbound adapters, inbound REST/MCP/listener/scheduler adapters, modules, domain primitives, records, classes, and blueprints.
-- **`hive-cli-c4` skill** - `hive c4 generate`, PlantUML rendering, architecture site output, and C4 troubleshooting.
+- `mcp.json`: portable Agent Plugins configuration used by Codex;
+- `.mcp.json`: Claude Code compatibility configuration.
 
-## Install
+Both connect to `http://127.0.0.1:9090/mcp` without authentication. The plugin
+configures the connection but does not start or package the Java server. Start
+Hive MCP before using its tools:
+
+```text
+mvn -q -pl hive-mcp spring-boot:run
+```
+
+The loopback endpoint is intended for local Codex and Claude Code sessions. A
+cloud installation needs a separately deployed HTTPS endpoint.
+
+See the plugin's [Privacy](./PRIVACY.md) notice for data-handling boundaries.
+
+## Feature and backlog workflow
+
+- `hive-backlog` configures Local, GitHub, GitLab, or Jira as the work-item
+  provider, maps states, preserves traceability, and guards remote writes;
+- `hive-feature` takes one work item through only the necessary analysis,
+  architecture, Platform, development, review, and delivery gates.
+
+Claude Code also discovers the `hive-feature` orchestrator under `agents/`.
+Codex can invoke the same workflow directly as a skill. Provider credentials
+are never packaged: external backlog operations require an available
+authenticated connector, MCP server, or client.
+
+## Roles
+
+The canonical instructions live in portable skills, so both Codex and Claude
+Code can use them:
+
+- `hive-analyst`: requirements and domain analysis;
+- `hive-architect`: architecture and technical decisions;
+- `hive-platform`: development environments, infrastructure services, CI,
+  pull-request controls, deployment, and operational readiness;
+- `hive-developer`: implementation and verification;
+- `hive-reviewer`: evidence-based code review.
+
+Claude Code additionally discovers the matching agents under `agents/`. Each
+agent preloads its canonical role skill, avoiding duplicated instructions.
+Codex invokes the same roles as skills, automatically when relevant or by name.
+
+## Module skills
+
+The plugin also provides focused, portable integration guidance:
+
+- `hive-core`: base use-case, result, domain, event, and mapper contracts;
+- `hive-port`: shared technical output ports;
+- `hive-adapter`: lightweight default adapter implementations;
+- `hive-validator`: framework-free command validation and Java SPI;
+- `jakarta-hive-validator`: Jakarta Bean Validation adapter and runtime wiring.
+
+These are skills in both Codex and Claude Code; they are not separate subagents.
+
+## MCP workflow
+
+The `hive` skill is the authoritative agent workflow and safety policy for
+these MCP capabilities. Live server schemas remain authoritative for tool
+parameters and result shapes:
+
+- project selection and inspection;
+- legacy source indexing and relation queries;
+- structured domain-model validation and persistence;
+- deterministic domain, application, and infrastructure generation;
+- Maven dependency and OSV analysis;
+- project and architecture verification.
+
+The MCP server process must be running before using the skill. Codex normally
+exposes its tools as `mcp__hive__*`; Claude Code scopes the plugin server under
+`mcp__plugin_hive_hive__*`. Operations return exact generated paths and
+validation results.
+
+## Install in Claude Code
 
 ```text
 /plugin marketplace add Sinapsi-Technologies/hive
 /plugin install hive@sinapsi
 ```
 
-## Prerequisites
+## Install in Codex
 
-- The `hive` CLI available (on the PATH, the `./hive` launcher, or built from source).
-- For a generated project to build, the `io.sinapsi.hive` libraries must be resolvable — from Maven Central once released, or via `mvn install` of the Hive repo for local development.
+From the repository root, register the marketplace and install `hive` from the
+`sinapsi` source in `/plugins`:
+
+```text
+codex plugin marketplace add .
+codex
+/plugins
+```
 
 ## Usage
 
 ```text
-/hive:new com.acme.billing      # bootstrap a project
-"add a RegisterInvoice use case with a SaveInvoice port and an in-memory adapter"
-"create an Email value object and a Customer aggregate"
-"generate C4 diagrams for the todo module"
+Select /Users/cristian/projects/todo with Hive MCP,
+validate the domain model, and generate the aggregate and use case.
 ```
-
-## CLI surface captured by the skills
-
-The skills intentionally mirror the current CLI:
-
-```text
-hive init
-hive check
-hive inspect config|model|generated
-hive create usecase|command|port|adapter|module|archtest
-hive create inbound rest|mcp|listener|scheduler
-hive create vo|id|entity|aggregate|enum|event|exception|domainservice|snapshot
-hive create record|class
-hive blueprint schema
-hive blueprint validate <file.yml>
-hive generate <file.yml>
-hive generate --all
-hive c4 generate
-```
-
-Use `hive create vo` for value objects.
-Use `hive blueprint schema --json` as the authoritative blueprint contract for the installed CLI version instead of copying blueprint syntax into agents or docs.

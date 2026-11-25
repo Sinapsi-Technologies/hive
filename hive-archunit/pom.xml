@@ -22,6 +22,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.sinapsi.hive</groupId>
+            <artifactId>jakarta-hive-validator</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit</artifactId>
         </dependency>

@@ -27,6 +27,7 @@ The module depends on `hive-core` and has no framework dependency.
 
 ```text
 io.sinapsi.hive.validation.CommandValidator
+io.sinapsi.hive.validation.CommandValidationException
 io.sinapsi.hive.validation.ValidationProvider
 io.sinapsi.hive.validation.ValidationProviders
 io.sinapsi.hive.factory.AbstractCommandFactory
@@ -67,6 +68,9 @@ Define validation rules:
 
 ```java
 import io.sinapsi.hive.validation.CommandValidator;
+import io.sinapsi.hive.validation.CommandValidationException;
+import io.sinapsi.hive.core.result.ErrorDetail;
+import java.util.List;
 
 public final class CreateUserValidation {
     public static CommandValidator<CreateUserCommand> rules() {
@@ -76,7 +80,7 @@ public final class CreateUserValidation {
     private static CommandValidator<CreateUserCommand> nameIsRequired() {
         return command -> {
             if (command.name() == null || command.name().isBlank()) {
-                throw new IllegalArgumentException("name is required");
+                throw new CommandValidationException(List.of(new ErrorDetail("name", "name is required")));
             }
         };
     }
@@ -84,7 +88,7 @@ public final class CreateUserValidation {
     private static CommandValidator<CreateUserCommand> emailIsRequired() {
         return command -> {
             if (command.email() == null || command.email().isBlank()) {
-                throw new IllegalArgumentException("email is required");
+                throw new CommandValidationException(List.of(new ErrorDetail("email", "email is required")));
             }
         };
     }
@@ -123,9 +127,10 @@ Use an `AbstractCommandFactory`. The factory reads the discovered provider throu
 
 ```java
 import io.sinapsi.hive.factory.AbstractCommandFactory;
+import io.sinapsi.hive.core.result.Result;
 
 public final class CreateUserCommandFactory extends AbstractCommandFactory<CreateUserCommand> {
-    public CreateUserCommand create(String name, String email) {
+    public Result<CreateUserCommand> create(String name, String email) {
         return validate(new CreateUserCommand(name, email));
     }
 }
@@ -136,10 +141,22 @@ Now command creation and validation happen together:
 ```java
 var factory = new CreateUserCommandFactory();
 
-CreateUserCommand command = factory.create("Ada", "ada@example.com");
+Result<CreateUserCommand> command = factory.create("Ada", "ada@example.com");
 ```
 
-If validation fails, the factory throws the exception raised by the validator.
+The factory converts `CommandValidationException` into a `Failure` with
+`CommonErrorCode.VALIDATION_FAILED` and the complete immutable list of `ErrorDetail`.
+Other exceptions propagate, so provider configuration failures are not reported as bad input.
+Compose the result with the use case to skip execution on invalid input:
+
+```java
+Result<UserView> result = factory.create(name, email).flatMap(createUser::handle);
+```
+
+A provider throws `CommandValidationException(List<ErrorDetail>)` for expected input
+violations. Details contain field paths and messages; an empty path represents an
+object-level violation. `and(...)` remains fail-fast across validators; an individual
+provider can collect multiple violations in one exception.
 
 ## Validation Provider Lookup
 

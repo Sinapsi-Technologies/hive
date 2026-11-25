@@ -1,6 +1,8 @@
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/HexagonalRulesTest.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/RegisterUseCase.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/commands/RegisterCommand.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/in/views/RegisterView.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/out/StoreData.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/ports/out/StorePort.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/application/services/RegisterService.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/domain/Amount.java
@@ -9,4 +11,12 @@
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/compliant/infrastructure/adapters/out/persistence/PersistentStoreAdapter.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/domaindep/application/OrderWorkflow.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/domaindep/domain/OrderEntity.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/domainvalidation/domain/ValidatedName.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/infrastructuredep/domain/Amount.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/infrastructuredep/infrastructure/adapters/in/BadController.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/portservicedep/application/ports/in/FindUserUseCase.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/portservicedep/application/services/UserOutput.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/serviceindomain/domain/PricingService.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/sharedinfra/application/DirectValidation.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/sharedinfra/domain/DirectValidation.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-archunit/src/test/java/io/sinapsi/hive/archunit/fixtures/violations/viewplacement/application/services/UserView.java

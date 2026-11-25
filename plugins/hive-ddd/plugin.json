@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hive-ddd",
+  "version": "0.1.0",
+  "description": "Domain-driven design discovery, modeling, implementation, refactoring, and review workflows.",
+  "author": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "homepage": "https://github.com/Sinapsi-Technologies/hive",
+  "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "license": "MIT",
+  "keywords": [
+    "ddd",
+    "domain-driven-design",
+    "software-design"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Hive DDD",
+        "shortDescription": "Domain-driven design skills",
+        "longDescription": "Discover, design, implement, refactor, and review domain models with focused domain-driven design skills.",
+        "developerName": "Sinapsi Technologies",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": "Help me model this domain using domain-driven design."
+      }
+    }
+  }
+}

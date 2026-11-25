@@ -1,0 +1,5 @@
+package ${packageName};
+
+${importsBlock}
+
+${sourceBody}

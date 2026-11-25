@@ -5,7 +5,7 @@
 
 Hive is an open-source **Java 21 toolkit for building hexagonal (ports & adapters) applications** with strong boundaries and low ceremony.
 
-It is **not a framework** and it does not try to own your application. Hive gives you small contracts, optional validation, optional technical ports, lightweight adapters, **reusable ArchUnit rules**, a **CLI** that creates the boring files correctly, and a **Claude Code plugin** that drives it all.
+It is **not a framework** and it does not try to own your application. Hive gives you small contracts, optional validation, optional technical ports, lightweight adapters, **reusable ArchUnit rules**, and an **MCP server** that exposes deterministic project operations to coding agents.
 
 > The default path is *simple first, modular later*.
 
@@ -26,12 +26,12 @@ Hive turns those decisions into a small, **repeatable, executable** convention:
 
 ## Highlights
 
-- **`hive` CLI** — `init`, `check`, deterministic `create` generators for application and domain building blocks, and `c4 generate`. It is idempotent, machine-readable with `--json`, and leaves `// TODO:` markers at the spots meant to be filled in.
-- **Executable architecture** — `hive-archunit` ships the hexagonal rules as ArchUnit tests; `hive create archtest` wires them into your build.
-- **Visible architecture** — `hive c4 generate` reads your hexagonal packages and produces styled C4 diagrams (PlantUML → SVG) plus a static HTML page, so the structure you are building is something you can actually see.
+- **Hive MCP server** — project selection, indexing, domain-model validation, deterministic generation, dependency inspection, OSV scanning, and architecture verification.
+- **Executable architecture** — `hive-archunit` ships the hexagonal rules as ArchUnit tests; MCP generation can add the architecture test scaffold.
+- **Visible architecture** — the MCP project index exposes package, type, call, and dependency relations that can be rendered as focused graph views.
 - **Framework-free core** — `hive-core` has no Spring, Jakarta, JPA, or persistence dependency.
 - **Optional batteries** — technical ports (clock, id, events, file storage), default adapters, and Jakarta Bean Validation, all opt-in.
-- **Claude Code plugin** — `/hive:new` to bootstrap a project and a `hive` skill to add or change a slice in natural language: the CLI builds the structure, Claude fills the logic, ArchUnit + `mvn verify` validate.
+- **Claude Code plugin** — an MCP-first `hive` skill that orchestrates project analysis and generation through `mcp__hive__*` tools.
 
 ## Modules
 
@@ -43,7 +43,7 @@ Hive turns those decisions into a small, **repeatable, executable** convention:
 | `hive-validator` | Framework-free command validation contract, `ValidationProviders`, and `AbstractCommandFactory`. |
 | `jakarta-hive-validator` | Jakarta Bean Validation provider, discovered through Java SPI. |
 | `hive-archunit` | Reusable ArchUnit rules for the Hive package convention and dependency direction. |
-| `hive-cli` | Picocli-based `hive` command for project initialization and scaffolding. |
+| `hive-mcp` | Spring Boot and Spring AI MCP server for analysis, generation, dependencies, and validation. |
 | `examples/todo-list-demo` | Full slice: aggregate, entities, value objects, domain events, an outbound port + adapter, validated commands, and a REST controller. |
 
 ## Coordinates
@@ -61,34 +61,24 @@ java:    21
 ```bash
 mvn clean verify        # build + tests + architecture rules for the whole monorepo
 mvn clean install       # also install the snapshots into your local ~/.m2
-mvn -pl hive-cli -am package   # build the CLI jar
+mvn spotless:check      # verify Java formatting
+mvn spotless:apply      # apply the configured Java formatter
 ```
 
-The repository ships a launcher script:
+Java sources are formatted with Spotless and Google Java Format (AOSP style).
+Formatting is intentionally explicit: normal builds do not rewrite source files.
+
+## Quick start (MCP)
 
 ```bash
-./hive --help
+mvn -q -pl hive-mcp spring-boot:run \\
+  -Dspring-boot.run.arguments="--server.port=9090 --hive.project-root=/path/to/project"
 ```
 
-To use `hive` from anywhere, alias it or symlink it onto your `PATH` — see [hive-cli/README.md](hive-cli/README.md).
+Connect the MCP client to `http://127.0.0.1:9090/mcp`, then use
+`hive_select_project`, `hive_init`, and the specialized `hive_create_*` tools.
 
-## Quick start (CLI)
-
-```bash
-mkdir hive-demo && cd hive-demo
-hive init                              # .hive-project, hive.yml, pom.xml, source roots
-hive create id UserId
-hive create vo Email --type String --not-blank
-hive create entity User --id UserId --field email:Email
-hive create usecase CreateUser --factory
-hive create port SaveUser
-hive create adapter InMemorySaveUser --port SaveUser
-hive create adapter Payment --group payment --port PaymentPort
-hive create archtest
-hive check
-```
-
-`hive init` writes a default `hive.yml`:
+`hive_init` writes a default `hive.yml`:
 
 ```yaml
 basePackage: com.example.app
@@ -97,20 +87,18 @@ javaSourceRoot: src/main/java
 testSourceRoot: src/test/java
 ```
 
-The generated `pom.xml` is Java 21-ready and includes `hive-core`. Commands that need extra modules update Maven for you: `--factory` adds `hive-validator`; `archtest` adds `hive-archunit` and `archunit-junit5`. Existing files are never overwritten unless `--force` is passed.
+The generated `pom.xml` is Java 21-ready and includes `hive-core`. MCP generation tools return exact paths and do not overwrite existing files unless `force=true` is requested.
 
-### `--json` and `// TODO:` markers
+### Structured MCP results and `// LLM:` guidance
 
-Every `init`, `create`, and `check` command accepts `--json`, printing a machine-readable result instead of prose:
+Every Hive MCP tool returns structured data instead of command-line prose:
 
-```bash
-hive create usecase CreateUser --json
+```text
+hive_create_usecase
 ```
 
 ```json
 {
-  "command": "create usecase",
-  "name": "CreateUser",
   "created": [
     "src/main/java/com/example/app/application/ports/in/CreateUserUseCase.java",
     "src/main/java/com/example/app/application/services/CreateUserService.java"
@@ -118,59 +106,61 @@ hive create usecase CreateUser --json
 }
 ```
 
-Generated files carry `// TODO:` markers at the points meant to be filled in (command fields, port methods, use-case logic, adapter implementations). Together with `--json`, this is built for a tool-driven workflow: a generator runs the deterministic CLI for the structure, reads the created paths, fills the marked spots, then lets `mvn verify` and the ArchUnit rules validate the result.
+Generated files may carry `// TODO:` markers. When domain guidance is known,
+`implementationGuidance` emits `// LLM:` comments for the next implementation
+pass. The MCP server creates the deterministic structure; the agent fills the
+business logic and verifies it with tests and ArchUnit.
 
 ### Deterministic domain generation
 
-Hive can also materialize domain primitives without inferring business semantics:
+Hive MCP can also materialize domain primitives without inferring business semantics:
 
-```bash
-hive create vo Email --type String --not-blank --pattern ".+@.+"
-hive create vo Money --field amount:BigDecimal --field currency:String --factory
-hive create vo Quantity --type Integer --min 1
-hive create id CustomerId
-hive create entity OrderLine --id OrderLineId --field quantity:Quantity
-hive create aggregate Order --id OrderId --field status:OrderStatus
-hive create enum OrderStatus --value DRAFT --value CONFIRMED --value CANCELLED
-hive create event OrderCreated --field orderId:OrderId --field occurredAt:Instant
-hive create exception OrderAlreadyConfirmed
-hive create domainservice Pricing
-hive create snapshot OrderSnapshot --field id:OrderId --field status:OrderStatus
+```text
+hive_create_value_object
+hive_create_id
+hive_create_entity
+hive_create_aggregate
+hive_create_enum
+hive_create_event
+hive_create_exception
+hive_create_domain_service
+hive_create_snapshot
 ```
 
 These generators write framework-free Java 21 domain code under `domain/valueobjects`, `domain/entities`, `domain/aggregates`, `domain/events`, and `domain/exceptions`. Identifiers and aggregates reuse the `hive-core` `AggregateId` / `AggregateRoot` contracts; value-object validation is generated as constructor checks, not Jakarta annotations.
 
-For non-domain boilerplate, Hive also exposes small deterministic Java generators:
+For non-domain boilerplate, Hive also exposes deterministic MCP generators:
 
-```bash
-hive create record CustomerResponse --field id:UUID --field tags:List<String>
-hive create class CustomerDto --field name:String --field email:String --getters --setters --all-args-constructor
-hive create command CreateOrder --field customerId:CustomerId
-hive create port LoadOrder --method "Optional<Order> load(OrderId id)"
-hive create adapter OrderPersistence --port LoadOrderPort --port SaveOrderPort
-hive create adapter Payment --group payment --port ChargePaymentPort --port RefundPaymentPort
+```text
+hive_create_record
+hive_create_class
+hive_create_command
+hive_create_port
+hive_create_adapter
 ```
 
-Blueprint files can batch the same generators:
+Structured domain models can batch the same generation decisions:
 
-```bash
-hive blueprint schema --json
-hive blueprint validate .hive/model/order.yml --json
-hive generate .hive/model/order.yml
-hive generate --all
-hive inspect config --json
+```text
+hive_validate_domain_model
+hive_save_domain_model
+hive_create_*
+hive_inspect
 ```
 
-The installed HIVE CLI is the authoritative source for the blueprint format supported by that version. External agents and IDE integrations should call `hive blueprint schema --json` to discover supported kinds, fields, constraints, and aliases, then run `hive blueprint validate <file.yml> --json` before `hive generate`.
+The MCP domain-model schema is the authoritative contract for requirements-driven generation.
 
 ---
 
-## Visual architecture with C4
+## Visual architecture with the project graph
 
-Hive can generate [C4](https://c4model.com/) diagrams directly from your hexagonal package structure — no extra modelling, no separate source of truth that drifts from the code:
+Hive MCP indexes the source graph and exposes targeted relations for visualisation:
 
-```bash
-hive c4 generate --module todo --render --site
+```text
+hive_analyze_project
+hive_get_symbol_relations
+hive_get_used_by
+hive_get_source_context
 ```
 
 Generated output:
@@ -188,7 +178,7 @@ The flagship is the **C3 component diagram**, where Hive's hexagon becomes visib
 Inbound Adapter → Input Port → Application Service → Domain → Output Port ← Outbound Adapter
 ```
 
-The CLI understands Hive's own convention, so the diagram is deterministic and stays clean: it draws the building blocks and the relationships that matter (an inbound adapter *calls* its input ports, a service *implements* a use case and *uses* the domain and its output ports, an outbound adapter *implements* an output port) instead of a noisy complete graph.
+The Hive project index understands the package convention, so an agent can draw the relationships that matter (an inbound adapter *calls* its input ports, a service *implements* a use case and *uses* the domain and its output ports, an outbound adapter *implements* an output port) instead of a noisy complete graph.
 
 Rendering is optional and degrades gracefully — if PlantUML is not installed, the `.puml` files are still written and the command tells you how to enable rendering. Configure it in `hive.yml`:
 
@@ -200,7 +190,7 @@ c4:
   theme: hive
 ```
 
-`hive c4 generate --render --site --open` then renders the diagrams, builds the page, and opens it. The result is meant to be shared — in READMEs, pull requests, onboarding docs, and architecture reviews.
+The indexed graph can be rendered as focused Mermaid, Graphviz, or C4-like views for READMEs, pull requests, onboarding docs, and architecture reviews.
 
 ---
 
@@ -215,17 +205,16 @@ Hive ships as a **Claude Code plugin** (`plugins/hive`). The repository itself i
 
 It provides:
 
-- **`/hive:new [basePackage]`** — bootstraps a project (resolves the CLI, `hive init`, a starter slice, `mvn verify`) and leaves you with a green build in seconds.
-- **the `hive` skill** — triggers when you ask to add or change a use case / port / adapter / module. It runs `hive create … --json`, reads the created paths, fills the `// TODO:` markers respecting the Hive conventions, and verifies with `mvn verify`.
+- **the `hive` skill** — uses the connected MCP server to select a project, analyze requirements, generate a slice, and verify the result.
 
 The division of labour is the point:
 
 ```text
-description → hive CLI (structure)  →  Claude (logic)  →  ArchUnit + mvn verify (guarantee)
-              deterministic, 0 tokens    only where needed   the architecture can't drift
+requirements → Hive MCP (structure) → Claude (logic) → ArchUnit + mvn verify
+               deterministic tools     only where needed
 ```
 
-> `/plugin` runs in the standalone Claude Code (terminal, desktop, or IDE app). Installing the plugin doesn't require the `hive` CLI, but the CLI must be available for the commands to do their work.
+> `/plugin` runs in the standalone Claude Code (terminal, desktop, or IDE app). The Hive MCP server must be connected before using the skill.
 
 ---
 
@@ -262,13 +251,13 @@ description → hive CLI (structure)  →  Claude (logic)  →  ArchUnit + mvn v
 - `application.ports.in` — input ports and use case contracts. Small commands may live here; larger ones under `application.ports.in.commands`.
 - `application.ports.out` — output ports: interfaces describing capabilities the application needs.
 - `application.services` — use case implementations.
-- `infrastructure.adapters.in` — inbound adapters (controllers, listeners, schedulers, CLI handlers).
+- `infrastructure.adapters.in` — inbound adapters (controllers, listeners, schedulers, command-line handlers).
 - `infrastructure.adapters.out` — outbound adapters (persistence, messaging, file, HTTP, external services).
 - `configurations` / `infrastructure.configs` — composition roots that wire services, ports, and adapters.
 
 ### Optional modular layout
 
-`hive create module <name>` generates the same internal convention under `<base-package>.modules.<name>`, without requiring Spring Modulith or any module framework. Start with one context; split into modules when the boundaries become valuable.
+`hive_create_module` generates the same internal convention under `<base-package>.modules.<name>`, without requiring Spring Modulith or any module framework. Start with one context; split into modules when the boundaries become valuable.
 
 ---
 
@@ -319,40 +308,38 @@ Use them for tests, demos, and small apps; replace them with project-specific in
 4. the use case receives a valid command.
 
 ```java
-public interface CreateUserUseCase extends UseCase<CreateUserUseCase.CreateUserCommand, Result> {
-    public final class CreateUserCommand implements Command {
-        private final String name;
-        private final String email;
+public interface CreateUserUseCase
+        extends UseCase<CreateUserUseCase.CreateUserCommand, Result<Unit>> {
 
-        private CreateUserCommand(String name, String email) {
-            this.name = name;
-            this.email = email;
-        }
+    record CreateUserCommand(String name, String email) implements Command {}
 
-        public static final class Factory extends AbstractCommandFactory<CreateUserCommand> {
-            public CreateUserCommand create(String name, String email) {
-                return validate(new CreateUserCommand(name, email));
-            }
-        }
+    final class CommandFactory extends AbstractCommandFactory<CreateUserCommand> {
+        private CommandFactory() {}
 
-        public String name() {
-            return name;
-        }
-
-        public String email() {
-            return email;
+        public static Result<CreateUserCommand> create(String name, String email) {
+            return new CommandFactory().validate(new CreateUserCommand(name, email));
         }
     }
 }
 ```
 
-Generated Commands are immutable final classes with private final properties, a private constructor, a nested Factory, and record-style accessors. For commands generated with a UseCase, the standard Java representation is nested: `CreateUserUseCase.CreateUserCommand.Factory` creates and validates `CreateUserUseCase.CreateUserCommand`. Explicit `hive create command ...` artifacts remain standalone but use the same Command class shape.
+Generated commands are immutable records nested in the use case, with an optional
+`CommandFactory` next to them. Factories return `Result<Command>` and convert expected
+validation violations into `Failure` with `VALIDATION_FAILED` and all field details.
+
+```java
+var result = CreateUserUseCase.CommandFactory.create(name, email)
+        .flatMap(createUser::handle);
+```
+
+Invalid input skips the use case. Failure transformations preserve the complete
+`ResultError(code, message, details)`, and `fold` receives that error as one argument.
 
 `AbstractCommandFactory` validates through `ValidationProviders.get().commandValidator()`. With no provider on the classpath it uses a no-op validator. Add `jakarta-hive-validator` (discovered via Java SPI) for Jakarta Bean Validation — keep using `AbstractCommandFactory`; don't instantiate the provider directly.
 
 ## ArchUnit
 
-`hive-archunit` exposes the rules through `io.sinapsi.hive.archunit.HexagonalRules`. `hive create archtest` generates a test bound to your base package:
+`hive-archunit` exposes the rules through `io.sinapsi.hive.archunit.HexagonalRules`. The MCP architecture-test generator creates a test bound to your base package:
 
 ```java
 @AnalyzeClasses(packages = "com.example.app")
@@ -382,46 +369,13 @@ Base rules:
 
 ---
 
-## CLI reference
-
-```bash
-hive init [--readme] [--force] [--json]
-hive check [--json]
-hive create usecase <Name> [--factory] [--force] [--json]
-hive create usecase <module> <Name> [--factory] [--force] [--json]
-hive create port <Name> [--force] [--json]
-hive create adapter <Name> --port <Port> [--port <Port>] [--group <group>] [--force] [--json]
-hive create vo <Name> [--type <Type>] [--not-null] [--not-blank] [--min <n>] [--max <n>] [--min-length <n>] [--max-length <n>] [--pattern <regex>] [--force] [--json]
-hive create id <Name> [--type UUID|Long|String] [--force] [--json]
-hive create entity <Name> --id <IdType> [--field name:Type]... [--force] [--json]
-hive create aggregate <Name> --id <IdType> [--field name:Type]... [--force] [--json]
-hive create enum <Name> --value <VALUE>... [--force] [--json]
-hive create event <Name> [--field name:Type]... [--force] [--json]
-hive create exception <Name> [--message <message>] [--force] [--json]
-hive create domainservice <Name> [--force] [--json]
-hive create snapshot <Name> [--field name:Type]... [--force] [--json]
-hive create record <Name> [--field name:Type]... [--force] [--json]
-hive create class <Name> [--field name:Type]... [--getters] [--setters] [--constructor] [--all-args-constructor] [--force] [--json]
-hive create command <Name> [--field name:Type]... [--force] [--json]
-hive create module <name> [--json]
-hive create archtest [--force] [--json]
-hive blueprint schema [--kind <kind>] [--json]
-hive blueprint validate <file> [--json]
-hive generate <file> [--force] [--json]
-hive generate --all [--force] [--json]
-hive inspect config|model|generated [--json]
-hive c4 generate [--module <name>] [--level <level>] [--output <path>] [--format <format>] [--render [svg|png]] [--site] [--open] [--force] [--json]
-```
-
-The CLI locates the project by walking upward until it finds `.hive-project`, reads `hive.yml`, writes deterministic files, refuses to overwrite without `--force`, and updates Maven for generated code. See [hive-cli/README.md](hive-cli/README.md) for the full guide.
-
 ## Examples
 
 ```bash
 mvn clean verify   # builds and tests every module, including the examples
 ```
 
-- **`todo-list-demo`** — a complete slice: a `TodoList` aggregate with entities, value objects, and domain events; an outbound repository port and adapter; validated commands behind a REST controller; the Hive clock and event-publishing ports wired to their default adapters. Scaffolded with the `hive` CLI, then implemented and enforced by the ArchUnit rules. See [examples/todo-list-demo/README.md](examples/todo-list-demo/README.md).
+- **`todo-list-demo`** — a complete slice: a `TodoList` aggregate with entities, value objects, and domain events; an outbound repository port and adapter; validated commands behind a REST controller; the Hive clock and event-publishing ports wired to their default adapters. Generated and validated through Hive MCP. See [examples/todo-list-demo/README.md](examples/todo-list-demo/README.md).
 
 > ⚠️ **`.gitignore` gotcha.** A common IntelliJ rule, `out/` (no leading slash), ignores **every** directory named `out` at any depth — including the hexagonal `application/ports/out/` and `infrastructure/adapters/out/` packages. New, untracked files there silently get dropped by `git clean` or the IDE. Anchor the rule to the repository root instead: `/out/`. Hive's own `.gitignore` is already fixed this way.
 
@@ -429,13 +383,41 @@ mvn clean verify   # builds and tests every module, including the examples
 
 ## Releasing
 
-A push of a `v*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which:
+A push of a release tag such as `v0.1.0` runs [`.github/workflows/release.yml`](.github/workflows/release.yml). It sets every module to the tag version, builds and tests the reactor, attaches sources and Javadoc, GPG-signs the artifacts, and publishes to **Maven Central**. The workflow waits for Central to confirm publication.
 
-1. derives the release version from the tag (`v0.1.0` → `0.1.0`);
-2. builds, GPG-signs, and publishes the six libraries (+ parent POM) to **Maven Central** via the Central Publishing Plugin (the `release` Maven profile);
-3. attaches the executable `hive-cli.jar` to a **GitHub Release**.
+Published coordinates use `io.sinapsi.hive`: `hive-toolkit` (parent POM), `hive-core`, `hive-archunit`, `hive-port`, `hive-adapter`, `hive-validator`, and `jakarta-hive-validator`. The example and executable `hive-mcp` server are built and tested but excluded from the Central bundle.
 
-The `io.sinapsi` namespace is verified on the Central Portal with a DNS TXT record on `sinapsi.io`. Examples and the CLI are excluded from Central; the CLI is distributed as a release asset.
+Before the first release:
+
+1. Verify ownership of the `io.sinapsi` namespace in the [Central Portal](https://central.sonatype.com) using the DNS TXT record for `sinapsi.io`, and grant the publishing account access to it.
+2. Generate a [Central Portal user token](https://central.sonatype.org/publish/generate-portal-token/).
+3. Configure these GitHub repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `MAVEN_CENTRAL_USERNAME` | User token username (not the login email) |
+| `MAVEN_CENTRAL_PASSWORD` | User token password |
+| `GPG_PRIVATE_KEY` | ASCII-armored signing private key (`gpg --armor --export-secret-keys <key-id>`) |
+| `MAVEN_GPG_PASSPHRASE` | Signing key passphrase |
+
+Publish the corresponding GPG public key to a public keyserver, as described in the [Central signing requirements](https://central.sonatype.org/publish/requirements/gpg/).
+
+To release the committed project, push a new, unused version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+For a local release, import the signing key into GPG and export `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, and `MAVEN_GPG_PASSPHRASE` in your shell. Use the committed settings template, which reads the token from environment variables:
+
+```bash
+mvn -B -ntp org.codehaus.mojo:versions-maven-plugin:2.18.0:set \
+  -DnewVersion=0.1.0 -DprocessAllModules=true -DgenerateBackupPoms=false
+mvn -B -ntp -s .mvn/central-settings.xml -Prelease clean deploy
+```
+
+The `release` profile rejects SNAPSHOT project versions and dependencies. To inspect the signed bundle locally without uploading, use the same deploy command with `-DskipUpload=true`; the ZIP is written under `target/central-publishing/`. This still requires a non-SNAPSHOT version and a GPG signing key. Published versions on Central cannot be overwritten.
 
 ## Design rules
 
@@ -448,7 +430,7 @@ The `io.sinapsi` namespace is verified on the Central Portal with a DNS TXT reco
 ## Roadmap
 
 - publish to Maven Central and cut the first release
-- richer CLI templates and configurable dependency versions
+- richer MCP templates and configurable dependency versions
 - optional Spring Boot starter and Spring adapters (events, clock, transactions)
 - more adapter implementations
 - migration helpers for existing projects
@@ -457,9 +439,4 @@ The `io.sinapsi` namespace is verified on the Central Portal with a DNS TXT reco
 
 Hive uses module-level licensing:
 
-- `hive-cli` is licensed under AGPL-3.0 — see [hive-cli/LICENSE](hive-cli/LICENSE).
-- All other modules are licensed under Apache License 2.0 — see [LICENSE](LICENSE).
-
-Generated output from `hive-cli` is not automatically subject to AGPL-3.0 merely
-because it was produced by the CLI. See [hive-cli/LICENSE](hive-cli/LICENSE) for
-the generated-output notice.
+- All modules are licensed under Apache License 2.0 — see [LICENSE](LICENSE).

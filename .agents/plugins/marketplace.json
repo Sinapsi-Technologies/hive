@@ -1,0 +1,68 @@
+{
+  "name": "sinapsi",
+  "interface": {
+    "displayName": "Sinapsi Technologies"
+  },
+  "plugins": [
+    {
+      "name": "hive",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hive"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "hive-arch",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hive-arch"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "hive-ddd",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hive-ddd"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "hive-gof",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hive-gof"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "hive-tdd",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hive-tdd"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

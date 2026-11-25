@@ -35,7 +35,7 @@ usecase.UseCase
 `UseCase<I, O>` represents one application action.
 
 ```java
-public interface CreateUserUseCase extends UseCase<CreateUserCommand, CreateUserResult> {
+public interface CreateUserUseCase extends UseCase<CreateUserCommand, Result<CreateUserView>> {
 }
 ```
 
@@ -60,9 +60,49 @@ Commands must not:
 
 ## Results
 
-`Result` is a marker for use case output models.
+`Result<T>` is a sealed operation outcome implemented only by `Success<T>` and `Failure<T>`.
+Output models are plain records or classes; they do not implement `Result`.
+Hive names application output records `*View` and places them in
+`application.ports.in.views`, with a static `of(...)` factory. Input contracts must
+not depend on service implementations.
 
-Use `Unit.INSTANCE` when a use case has no meaningful return value.
+```java
+// application.ports.in.views
+public record UserView(String id, String name) {
+    public static UserView of(String id, String name) {
+        return new UserView(id, name);
+    }
+}
+
+public interface FindUserUseCase extends UseCase<FindUserCommand, Result<UserView>> {}
+```
+
+Return `Result.success(output)` for a successful operation or
+`Result.failure(errorCode, message)` for an expected application error.
+`ErrorCode` is open so each bounded context can define its own error catalog.
+Adapters translate errors to transport-specific responses, such as HTTP status codes.
+
+Failures contain an immutable `ResultError` with an `ErrorCode`, message, and
+`List<ErrorDetail>`. `ErrorDetail(field, message)` describes field or object-level
+errors; an empty field path identifies the whole object.
+`Result.failure(code, message)` uses an empty detail list; the overload
+`Result.failure(code, message, details)` retains multiple details.
+
+Both outcomes support `isSuccess`, `map`, `flatMap`, and `fold`.
+Transformations apply only to success values; failures preserve their complete error.
+`fold(onSuccess, onFailure)` passes a single `ResultError` to the failure function:
+
+```java
+String description = result.fold(
+        value -> "Success: " + value,
+        error -> error.code().value() + ": " + error.message()
+);
+```
+
+`CommonErrorCode.VALIDATION_FAILED` is an optional shared validation code.
+Other business codes remain application-specific.
+Success values must be non-null. Use `Result.success(Unit.INSTANCE)` when a use case
+has no meaningful return value.
 
 ## Ports
 

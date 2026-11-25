@@ -1,2 +1,2 @@
-io/sinapsi/hive/validation/JakartaCommandValidator.class
-io/sinapsi/hive/validation/JakartaValidationProvider.class
+io/sinapsi/hive/infrastructure/validation/JakartaValidationProvider.class
+io/sinapsi/hive/infrastructure/validation/JakartaCommandValidator.class

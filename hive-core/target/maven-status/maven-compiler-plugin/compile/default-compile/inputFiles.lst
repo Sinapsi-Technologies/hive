@@ -11,6 +11,12 @@
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/InputPort.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/OutputPort.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/port/Port.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/CommonErrorCode.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/ErrorCode.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/ErrorDetail.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Failure.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Result.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/ResultError.java
+/Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Success.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/result/Unit.java
 /Users/cristian/Documents/code/sinapsi/hive/hive-core/src/main/java/io/sinapsi/hive/core/usecase/UseCase.java

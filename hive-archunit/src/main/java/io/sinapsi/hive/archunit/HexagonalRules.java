@@ -23,9 +23,12 @@ public final class HexagonalRules {
                 .resideInAnyPackage(
                         "org.springframework..",
                         "jakarta.persistence..",
-                        "javax.persistence.."
+                        "javax.persistence..",
+                        "jakarta.validation..",
+                        "javax.validation..",
+                        "org.hibernate.validator.."
                 )
-                .because("domain code must stay framework-free and must not depend on Spring or persistence APIs");
+                .because("domain code must stay framework-free and must not depend on Spring, persistence or validation APIs");
     }
 
     public static ArchRule domainShouldNotDependOnApplication(String basePackage) {
@@ -44,7 +47,10 @@ public final class HexagonalRules {
                 .resideInAPackage(packagePattern(basePackage, "domain"))
                 .should()
                 .dependOnClassesThat()
-                .resideInAPackage(packagePattern(basePackage, "infrastructure"))
+                .resideInAnyPackage(
+                        packagePattern(basePackage, "infrastructure"),
+                        "io.sinapsi.hive.infrastructure.."
+                )
                 .because("domain code must not depend on infrastructure adapters or configuration");
     }
 
@@ -54,7 +60,10 @@ public final class HexagonalRules {
                 .resideInAPackage(packagePattern(basePackage, "application"))
                 .should()
                 .dependOnClassesThat()
-                .resideInAPackage(packagePattern(basePackage, "infrastructure"))
+                .resideInAnyPackage(
+                        packagePattern(basePackage, "infrastructure"),
+                        "io.sinapsi.hive.infrastructure.."
+                )
                 .because("application code should depend on ports and interfaces, not infrastructure adapters");
     }
 
@@ -76,6 +85,16 @@ public final class HexagonalRules {
                 .dependOnClassesThat()
                 .resideInAPackage(packagePattern(basePackage, "infrastructure.adapters.out"))
                 .because("application code must depend on output ports, not outbound adapters");
+    }
+
+    public static ArchRule inboundAdaptersShouldNotDependOnDomain(String basePackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(packagePattern(basePackage, "infrastructure.adapters.in"))
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage(packagePattern(basePackage, "domain"))
+                .because("inbound adapters must translate transport models through mappers instead of coupling directly to domain objects");
     }
 
     public static ArchRule inboundAdaptersShouldNotDependOnOutboundAdapters(String basePackage) {
@@ -132,6 +151,27 @@ public final class HexagonalRules {
                 .should()
                 .resideInAPackage(packagePattern(basePackage, "application.ports.in"))
                 .because("input ports and use case contracts should live under application.ports.in");
+    }
+
+    public static ArchRule viewsShouldResideInsideInputPortViews(String basePackage) {
+        return classes()
+                .that()
+                .haveSimpleNameEndingWith("View")
+                .should()
+                .resideInAPackage(packagePattern(basePackage, "application.ports.in.views"))
+                .because("application views are public use case output models and belong near input ports")
+                .allowEmptyShould(true);
+    }
+
+    public static ArchRule inputPortsShouldNotDependOnServices(String basePackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(packagePattern(basePackage, "application.ports.in"))
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage(packagePattern(basePackage, "application.services"))
+                .because("input contracts and their models must not depend on service implementations")
+                .allowEmptyShould(true);
     }
 
     public static ArchRule outputPortsShouldResideInsideOutputPortsPackage(String basePackage) {
@@ -208,11 +248,14 @@ public final class HexagonalRules {
                 .and(applicationShouldNotDependOnInfrastructure(basePackage))
                 .and(applicationShouldNotDependOnInboundAdapters(basePackage))
                 .and(applicationShouldNotDependOnOutboundAdapters(basePackage))
+                .and(inboundAdaptersShouldNotDependOnDomain(basePackage))
                 .and(inboundAdaptersShouldNotDependOnOutboundAdapters(basePackage))
                 .and(mappersShouldNotBeInDomain(basePackage))
                 .and(commandsShouldResideInAllowedPlaces(basePackage))
                 .and(noStandaloneApplicationCommandPackageShouldBeUsed(basePackage))
                 .and(useCasesShouldResideInsideInputPorts(basePackage))
+                .and(viewsShouldResideInsideInputPortViews(basePackage))
+                .and(inputPortsShouldNotDependOnServices(basePackage))
                 .and(outputPortsShouldResideInsideOutputPortsPackage(basePackage))
                 .and(servicesShouldNotResideInDomain(basePackage))
                 .and(noCyclesBetweenMainLayers(basePackage));

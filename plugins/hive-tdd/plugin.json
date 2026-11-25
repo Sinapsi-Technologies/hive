@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hive-tdd",
+  "version": "0.1.0",
+  "description": "Test-driven development technique selection, execution, diagnosis, and review workflows.",
+  "author": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "homepage": "https://github.com/Sinapsi-Technologies/hive",
+  "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "license": "MIT",
+  "keywords": [
+    "tdd",
+    "testing",
+    "software-design"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Hive TDD",
+        "shortDescription": "Test-driven development",
+        "longDescription": "Choose and apply focused test-driven development techniques, diagnose test smells, and keep feedback loops small.",
+        "developerName": "Sinapsi Technologies",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": "Guide this change with an appropriate test-driven development technique."
+      }
+    }
+  }
+}

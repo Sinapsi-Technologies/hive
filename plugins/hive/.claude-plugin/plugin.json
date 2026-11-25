@@ -1,13 +1,14 @@
 {
   "name": "hive",
-  "description": "Bootstrap and evolve hexagonal Java projects with the Hive toolkit CLI. Maps project lifecycle, deterministic code generation, blueprints, inspection, and C4 diagrams to the real `hive` command surface.",
-  "version": "0.1.0",
+  "description": "Connect to Hive MCP and coordinate backlog-driven features with lifecycle subagents and Hive module guidance.",
+  "version": "0.8.0",
   "author": {
     "name": "Sinapsi Technologies",
     "url": "https://github.com/Sinapsi-Technologies"
   },
   "homepage": "https://github.com/Sinapsi-Technologies/hive",
   "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "privacyPolicyUrl": "https://github.com/Sinapsi-Technologies/hive/blob/main/plugins/hive/PRIVACY.md",
   "license": "Apache-2.0",
   "keywords": [
     "hexagonal",

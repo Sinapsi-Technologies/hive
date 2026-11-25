@@ -1,4 +1,5 @@
 io/sinapsi/hive/core/CoreContractsTest$TestCommand.class
+io/sinapsi/hive/core/CoreContractsTest$TestErrorCode.class
 io/sinapsi/hive/core/CoreContractsTest$TestDomainEvent.class
 io/sinapsi/hive/core/CoreContractsTest$TestInputPort.class
 io/sinapsi/hive/core/CoreContractsTest.class

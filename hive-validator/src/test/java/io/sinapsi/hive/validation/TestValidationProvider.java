@@ -8,6 +8,9 @@ public final class TestValidationProvider implements ValidationProvider {
     @SuppressWarnings("unchecked")
     public <C extends Command> CommandValidator<C> commandValidator() {
         return command -> {
+            if (command instanceof CommandValidatorTest.BrokenCommand) {
+                throw new IllegalStateException("Provider unavailable");
+            }
             if (command instanceof CommandValidatorTest.CreateUserCommand createUserCommand) {
                 CommandValidatorTest.CreateUserValidation.rules()
                         .validate(createUserCommand);

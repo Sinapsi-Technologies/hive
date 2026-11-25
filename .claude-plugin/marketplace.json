@@ -1,5 +1,6 @@
 {
   "name": "sinapsi",
+  "description": "Hive workflows and focused software-design skill packs for Java development.",
   "owner": {
     "name": "Sinapsi Technologies",
     "url": "https://github.com/Sinapsi-Technologies"
@@ -8,7 +9,27 @@
     {
       "name": "hive",
       "source": "./plugins/hive",
-      "description": "Bootstrap and evolve hexagonal (ports & adapters) Java projects with the Hive toolkit CLI."
+      "description": "Bootstrap and evolve hexagonal (ports & adapters) Java projects through the Hive MCP server."
+    },
+    {
+      "name": "hive-arch",
+      "source": "./plugins/hive-arch",
+      "description": "Architecture pattern identification, design, review, and migration workflows."
+    },
+    {
+      "name": "hive-ddd",
+      "source": "./plugins/hive-ddd",
+      "description": "Domain-driven design discovery, modeling, implementation, refactoring, and review workflows."
+    },
+    {
+      "name": "hive-gof",
+      "source": "./plugins/hive-gof",
+      "description": "Gang of Four design pattern identification, implementation, refactoring, and review workflows."
+    },
+    {
+      "name": "hive-tdd",
+      "source": "./plugins/hive-tdd",
+      "description": "Test-driven development technique selection, execution, diagnosis, and review workflows."
     }
   ]
 }

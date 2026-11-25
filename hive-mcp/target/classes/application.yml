@@ -1,0 +1,33 @@
+server:
+  port: 9090
+spring:
+  config:
+    import: optional:file:${HIVE_SECRET_FILE:}
+  ai:
+    mcp:
+      server:
+        protocol: STREAMABLE
+        request-timeout: ${HIVE_MCP_REQUEST_TIMEOUT:180s}
+hive:
+  # Intentionally empty: the server must not treat its working directory as a project.
+  # Set HIVE_PROJECT_ROOT only when running a dedicated one-project instance.
+  project-root: ${HIVE_PROJECT_ROOT:}
+  dependencies:
+    graph:
+      executable: ${MAVEN_EXECUTABLE:mvn}
+      plugin-version: ${HIVE_MAVEN_DEPENDENCY_PLUGIN_VERSION:3.11.0}
+      timeout-millis: ${HIVE_MAVEN_GRAPH_TIMEOUT_MILLIS:120000}
+  security:
+    sonatype:
+      # Keep disabled by default. Set SONATYPE_GUIDE_TOKEN outside the project.
+      enabled: ${HIVE_SONATYPE_ENABLED:false}
+      base-url: ${SONATYPE_GUIDE_BASE_URL:https://api.guide.sonatype.com}
+      timeout-millis: ${HIVE_SONATYPE_TIMEOUT_MILLIS:5000}
+      fail-severity: ${HIVE_SONATYPE_FAIL_SEVERITY:HIGH}
+      fail-on-unavailable: ${HIVE_SONATYPE_FAIL_ON_UNAVAILABLE:false}
+    osv:
+      enabled: ${HIVE_OSV_ENABLED:true}
+      executable: ${OSV_SCANNER_EXECUTABLE:osv-scanner}
+      timeout-millis: ${HIVE_OSV_TIMEOUT_MILLIS:120000}
+      recursive: ${HIVE_OSV_RECURSIVE:true}
+      fail-on-unavailable: ${HIVE_OSV_FAIL_ON_UNAVAILABLE:false}

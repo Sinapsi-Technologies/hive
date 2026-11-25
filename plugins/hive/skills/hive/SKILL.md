@@ -1,130 +1,148 @@
 ---
 name: hive
-description: Work on Java projects that use the Hive toolkit and its `hive` CLI. Use when the user mentions Hive, hexagonal architecture, ports and adapters, use cases, domain primitives, modules, generated scaffolding, ArchUnit rules, blueprints, or C4 diagrams.
+description: Work on Java projects through the Hive MCP server. Use for Hive project selection, legacy analysis, domain modeling, hexagonal code generation, dependency inspection, and validation.
 ---
 
-# Hive project workflow
+# Hive MCP workflow
 
-Use this skill as the top-level workflow for Hive projects. Hive's rule is simple: let the deterministic CLI create structure, then edit only the generated TODOs and surrounding business logic.
+This skill is exclusively for the Hive MCP server declared by the plugin. It
+must use the connected Hive MCP tools and must not invoke shell generators or
+hand-written structural scaffolding.
 
-## Project detection
+Resolve tools by their final operation name and inspect the schemas exposed by
+the current host before calling them. Codex normally exposes the server as
+`mcp__hive__*`; Claude Code scopes a plugin-provided server as
+`mcp__plugin_hive_hive__*`. These prefixes identify the same Hive operations.
+Do not treat the host-specific prefix as part of the operation contract.
 
-A Hive project contains `.hive-project`. Walk upward from the current directory to find it.
+## Authority
 
-- If the marker exists, work from that project root.
-- If there is no marker and the user wants a new project, use `/hive:new`.
-- If there is no marker and the user wants to modify an existing project, ask them to initialize or point you to the Hive project root.
+This skill is the authoritative source for the agent workflow and safety policy
+when operating Hive MCP. Do not rely on a separate tool manifesto or duplicate
+the workflow in project instructions.
 
-## CLI resolution
+The live tool schemas exposed by the connected Hive MCP server remain
+authoritative for parameter names, required fields, result shapes, and
+capabilities. Inspect the actual schema before each unfamiliar call. If this
+skill and the connected server disagree, do not invent arguments: report the
+mismatch, follow the safer compatible behavior, and identify the skill or
+server update that is required.
 
-Use this order:
+Apply these rules throughout the workflow:
 
-1. `hive`
-2. `./hive` from the Hive project root
-3. if inside the Hive toolkit repo, build once with `mvn -q -pl hive-cli -am package`, then use `./hive`
+1. Never assume the server working directory is the target project.
+2. Verify the selected project before every write.
+3. Prefer the most specific `hive_create_*` tool; use generic `hive_create`
+   only for an advanced case not covered by a specialized tool.
+4. After generation, call `hive_index_files` with the exact returned paths.
+5. Never overwrite an existing file unless the user explicitly requested it
+   and the tool call intentionally sets `force=true`.
+6. Treat `UNAVAILABLE`, timeouts, and parsing errors as checks not completed,
+   never as `PASS` or absence of vulnerabilities.
+7. Report exact paths, state changes, checks performed, and checks not
+   completed.
 
-Always prefer CLI commands over hand-written structural files.
+## Project context
 
-For blueprint syntax discovery, the only authoritative source is the installed CLI:
+Before reading or writing a project:
 
-```bash
-hive blueprint schema --json
-```
+1. Call the available tool whose operation name is `hive_current_project`.
+2. If no project is selected, or the user names another project, call
+   `hive_select_project` with an absolute existing path.
+3. Call `hive_current_project` again and confirm that its normalized path is
+   the requested project.
 
-Do not inspect `BlueprintGenerator`, parser source files, README examples, or skill text to reconstruct blueprint syntax. If `hive blueprint schema --json` is unavailable, resolve or build the CLI first; if it is still unavailable, stop and report that the installed CLI cannot expose its blueprint contract.
+The selected project is the context for all subsequent tools.
 
-## Command map
+For a new directory, use `hive_init_project` when its live schema supports the
+requested initialization. For an existing selected project, use `hive_check`
+to inspect its state and call `hive_init` only when initialization is part of
+the user's request. Initialization and project selection are state-changing;
+report the resulting marker, configuration, build, and source paths.
 
-Project lifecycle:
+## Read-only inspection
 
-```bash
-hive init [--readme] [--force] [--json]
-hive check [--json]
-hive inspect config|model|generated [--json]
-```
+Use:
 
-Application layer and outbound adapters:
+- `hive_check` for project health and missing files;
+- `hive_inspect` for configuration, model files, and generated manifest;
+- `hive_analyze_project` to build or refresh the SQLite source index;
+- `hive_project_index_summary` for index counts;
+- `hive_get_symbol_relations` for imports and type relations;
+- `hive_symbol_imported_by` for classes importing a type or enum;
+- `hive_get_used_by` for reverse call-impact analysis;
+- `hive_get_source_context` for targeted source fragments;
+- `hive_dependency_graph` and `hive_scan_dependencies` for Maven/security analysis.
 
-```bash
-hive create usecase [moduleName] <UseCaseName> [--field name:Type] [--factory] [--force] [--json]
-hive create command [moduleName] <CommandName> [--field name:Type] [--force] [--json]
-hive create port [moduleName] <PortName> [--method "ReturnType method(Type arg)"] [--force] [--json]
-hive create adapter [moduleName] <AdapterName> --port <PortName> [--port <PortName>] [--group <group>] [--force] [--json]
-```
+`hive_analyze_project` updates `.hive/index/hive.db`; it is analytical but not
+strictly read-only. Use it for the first index or after untracked external
+changes. After a Hive generation call, prefer `hive_index_files` with the
+returned paths instead of rescanning the whole project.
 
-Inbound adapters:
+## Domain analysis and generation
 
-```bash
-hive create inbound rest [moduleName] <ControllerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--operation "METHOD /path -> UseCaseName"] [--force] [--json]
-hive create inbound mcp [moduleName] <ToolName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
-hive create inbound listener [moduleName] <ListenerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
-hive create inbound scheduler [moduleName] <SchedulerName> --usecase <UseCaseName> [--usecase <UseCaseName>] [--force] [--json]
-```
+For requirements-driven work:
 
-Use `hive create inbound ...` for REST controllers/resources, MCP tools, message listeners/consumers, and schedulers/system triggers. Do not use `hive create adapter` for inbound artifacts; `adapter` means outbound implementation of output ports only.
+1. Build a structured domain model from the requirements.
+2. Call `hive_validate_domain_model`.
+3. Fix every validation error before continuing.
+4. Call `hive_save_domain_model` to persist `.hive/model/domain-model.yml`.
+5. Call the specialized `hive_create_*` tools for modules, value objects,
+   identifiers, entities, aggregates, events, use cases, ports, adapters, and
+   architecture tests.
+6. Pass every generated source path to `hive_index_files`.
+7. Call `hive_check` and inspect the generated paths.
 
-Domain layer:
+Use `implementationGuidance` when the requirements contain known invariants,
+events, constraints, or implementation context. Hive emits that guidance as
+`// LLM:` comments; it does not execute the text as code.
 
-```bash
-hive create vo [moduleName] <Name> [--type String|UUID|Integer|Long|BigDecimal|Boolean] [--field name:Type] [--not-null] [--not-blank] [--min value] [--max value] [--min-length n] [--max-length n] [--pattern regex] [--factory] [--force] [--json]
-hive create id [moduleName] <Name> [--type UUID|Long|String] [--force] [--json]
-hive create entity [moduleName] <Name> --id <IdType> [--field name:Type] [--force] [--json]
-hive create aggregate [moduleName] <Name> --id <IdType> [--field name:Type] [--force] [--json]
-hive create enum [moduleName] <Name> --value <VALUE> [--value <VALUE>] [--force] [--json]
-hive create event [moduleName] <Name> [--field name:Type] [--force] [--json]
-hive create exception [moduleName] <Name> [--message "Message"] [--force] [--json]
-hive create domainservice [moduleName] <Name> [--force] [--json]
-hive create snapshot [moduleName] <Name> [--field name:Type] [--force] [--json]
-```
+## Dependency workflow
 
-Shared/simple Java artifacts:
+Use the MCP tools in this order when adding a dependency:
 
-```bash
-hive create record [moduleName] <Name> [--field name:Type] [--force] [--json]
-hive create class [moduleName] <Name> [--field name:Type] [--getters] [--setters] [--constructor] [--all-args-constructor] [--force] [--json]
-```
+1. `hive_search_dependency`;
+2. `hive_list_dependency_versions`;
+3. `hive_check_dependency`;
+4. `hive_add_dependency` with `verify=true` when the user authorizes a change.
 
-Modules, architecture tests, blueprints, and diagrams:
+Use `hive_dependency_graph` and `hive_scan_dependencies` for read-only Maven
+and OSV analysis.
 
-```bash
-hive create module <moduleName> [--json]
-hive create archtest [--force] [--json]
-hive blueprint schema [--kind kind] [--json]
-hive blueprint validate <file.yml> [--json]
-hive generate <file.yml> [--force] [--json]
-hive generate --all [--force] [--json]
-hive c4 generate [--module name] [--level context|container|component] [--output path] [--format puml] [--render [svg|png]] [--site] [--open] [--force] [--json]
-```
+`hive_check_dependency` evaluates a candidate coordinate through the configured
+advisors, such as Sonatype. `hive_scan_dependencies` evaluates the project and
+resolved dependencies through the configured scanner, such as OSV. These are
+complementary checks. Do not weaken server policy or change security environment
+variables merely to obtain a successful result.
 
-Use `hive create vo` for value objects.
+## Architectural rules
 
-## Operating rules
+- Keep domain code framework-free.
+- Keep commands immutable input models.
+- Put business logic in domain types or application services.
+- Keep technology-specific types in infrastructure adapters.
+- Use output ports for capabilities and adapters for implementations.
+- Convert DTOs and transport models at inbound boundaries before domain logic.
+- Keep output ports in `application.ports.out` for the Hive architecture profile.
+- Do not overwrite existing files unless the user explicitly requests it and
+  the call deliberately uses `force=true`.
+- Before every write, verify the selected project with `hive_current_project`.
 
-- Pass `--json` for scaffolding commands whenever you will edit the generated files; read the `created` array for exact paths.
-- Use `--force` only when the user clearly wants to overwrite existing generated files.
-- Do not move generated files out of Hive packages. ArchUnit rules enforce the layout.
-- Domain code must stay framework-free: no Spring, JPA, HTTP, persistence, messaging, or Jakarta validation annotations in `domain`.
-- Commands are immutable input models. Business logic belongs in domain types or application services.
-- Generated Commands are immutable final classes with private final properties, private constructors, nested `Factory` construction, and record-style accessors. Commands generated as part of a UseCase are nested in the generated UseCase contract. Standalone `hive create command` artifacts remain standalone.
-- Output ports describe capabilities, not technologies. Adapters implement technologies.
-- Inbound adapters call existing application UseCases. Create the UseCase first when it does not exist; do not expect `create inbound` to create one implicitly.
-- Keep inbound framework or SDK types in `infrastructure/adapters/in/...`; never introduce HTTP, MCP, broker, scheduler, or framework types into domain, application, Command, or UseCase classes.
-- For blueprint files, call `hive blueprint schema --json` instead of relying on remembered syntax, source code, docs, or examples. The installed CLI is authoritative for supported blueprint kinds, fields, constraints, and aliases.
-- Before `hive generate <file.yml>`, run `hive blueprint validate <file.yml> --json` and fix any machine-readable diagnostics.
-- If a requested artifact maps to a CLI generator, run the CLI first. Fill TODOs after generation.
+## Missing capabilities
+
+If an expected MCP tool is absent from the connected server, report the missing
+capability and stop the dependent part of the workflow. Continue independent
+read-only or already-supported work when useful. Do not silently substitute
+generic generation or hand-written scaffolding.
 
 ## Verification
 
-For normal changes, finish with:
+After generation or modification:
 
-```bash
-mvn -q verify
-```
-
-For CLI-only changes inside the Hive toolkit repository, use:
-
-```bash
-mvn -q -pl hive-cli -am test
-```
-
-Fix compile, test, and ArchUnit failures before reporting done.
+1. Index the exact changed paths with `hive_index_files`.
+2. Run the relevant Hive inspection, architecture, build, dependency, and
+   security checks supported by the server and requested scope.
+3. Treat missing tools, `UNAVAILABLE`, timeout, and parsing errors as incomplete
+   verification.
+4. Report the exact files changed, warnings, rollback outcome when applicable,
+   checks performed, checks not completed, and remaining TODO/LLM guidance.

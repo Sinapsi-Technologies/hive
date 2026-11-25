@@ -2,6 +2,10 @@ package io.sinapsi.hive.validation;
 
 import io.sinapsi.hive.core.command.Command;
 import io.sinapsi.hive.factory.AbstractCommandFactory;
+import io.sinapsi.hive.core.result.Result;
+import io.sinapsi.hive.core.result.Failure;
+import io.sinapsi.hive.core.result.ErrorDetail;
+import io.sinapsi.hive.core.result.CommonErrorCode;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -25,12 +29,12 @@ class CommandValidatorTest {
     void throwsApplicationExceptionWhenRuleFails() {
         CommandValidator<CreateUserCommand> validator = CreateUserValidation.rules();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        CommandValidationException exception = assertThrows(
+                CommandValidationException.class,
                 () -> validator.validate(new CreateUserCommand("", "ada@example.com"))
         );
 
-        assertEquals("name is required", exception.getMessage());
+        assertEquals(List.of(new ErrorDetail("name", "name is required")), exception.errors());
     }
 
     @Test
@@ -80,7 +84,9 @@ class CommandValidatorTest {
     void abstractCommandFactoryValidatesCreatedCommandThroughValidationProvidersGet() {
         CreateUserCommandFactory factory = new CreateUserCommandFactory();
 
-        CreateUserCommand command = factory.create("Ada", "ada@example.com");
+        CreateUserCommand command = factory.create("Ada", "ada@example.com").fold(value -> value, error -> {
+            throw new AssertionError(error);
+        });
 
         assertEquals(new CreateUserCommand("Ada", "ada@example.com"), command);
     }
@@ -89,19 +95,41 @@ class CommandValidatorTest {
     void abstractCommandFactoryRejectsInvalidCreatedCommandThroughValidationProvidersGet() {
         CreateUserCommandFactory factory = new CreateUserCommandFactory();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> factory.create("", "ada@example.com")
-        );
+        Failure<?> failure = assertInstanceOf(Failure.class, factory.create("", "ada@example.com"));
 
-        assertEquals("name is required", exception.getMessage());
+        assertEquals(CommonErrorCode.VALIDATION_FAILED, failure.code());
+        assertEquals(List.of(new ErrorDetail("name", "name is required")), failure.details());
     }
+
+    @Test
+    void validationExceptionCopiesAndProtectsItsDetails() {
+        var errors = new ArrayList<>(List.of(new ErrorDetail("name", "Required")));
+        var exception = new CommandValidationException(errors);
+        errors.clear();
+
+        assertEquals(List.of(new ErrorDetail("name", "Required")), exception.errors());
+        assertThrows(UnsupportedOperationException.class, () -> exception.errors().clear());
+        assertThrows(IllegalArgumentException.class, () -> new CommandValidationException(List.of()));
+    }
+
+    @Test
+    void factoryDoesNotConvertUnexpectedProviderErrorsIntoValidationFailures() {
+        var factory = new AbstractCommandFactory<BrokenCommand>() {
+            Result<BrokenCommand> create() {
+                return validate(new BrokenCommand());
+            }
+        };
+
+        assertThrows(IllegalStateException.class, factory::create);
+    }
+
+    record BrokenCommand() implements Command {}
 
     record CreateUserCommand(String name, String email) implements Command {
     }
 
     private static final class CreateUserCommandFactory extends AbstractCommandFactory<CreateUserCommand> {
-        CreateUserCommand create(String name, String email) {
+        Result<CreateUserCommand> create(String name, String email) {
             return validate(new CreateUserCommand(name, email));
         }
     }
@@ -117,7 +145,7 @@ class CommandValidatorTest {
         private static CommandValidator<CreateUserCommand> nameIsRequired() {
             return command -> {
                 if (command.name() == null || command.name().isBlank()) {
-                    throw new IllegalArgumentException("name is required");
+                    throw new CommandValidationException(List.of(new ErrorDetail("name", "name is required")));
                 }
             };
         }
@@ -125,7 +153,7 @@ class CommandValidatorTest {
         private static CommandValidator<CreateUserCommand> emailIsRequired() {
             return command -> {
                 if (command.email() == null || command.email().isBlank()) {
-                    throw new IllegalArgumentException("email is required");
+                    throw new CommandValidationException(List.of(new ErrorDetail("email", "email is required")));
                 }
             };
         }

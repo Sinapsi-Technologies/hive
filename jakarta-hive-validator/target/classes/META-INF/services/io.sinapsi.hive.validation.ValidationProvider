@@ -1,1 +1,1 @@
-io.sinapsi.hive.validation.JakartaValidationProvider
+io.sinapsi.hive.infrastructure.validation.JakartaValidationProvider

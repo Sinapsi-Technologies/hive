@@ -1,0 +1,18 @@
+{
+  "name": "hive-arch",
+  "displayName": "Hive Architecture",
+  "description": "Architecture pattern identification, design, review, and migration workflows.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Sinapsi Technologies",
+    "url": "https://github.com/Sinapsi-Technologies"
+  },
+  "homepage": "https://github.com/Sinapsi-Technologies/hive",
+  "repository": "https://github.com/Sinapsi-Technologies/hive",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "patterns",
+    "software-design"
+  ]
+}
